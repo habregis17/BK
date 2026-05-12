@@ -507,7 +507,7 @@ try {
 
 
         $reporterInfo = ($identity_choice === 'Anonymous') ? 'Anonymous reporter' : htmlspecialchars($case['full_name']);
-        $reviewLink = "https://bdowb.rw/BK/Admin/Cases/?casenumber=" . urlencode($casenumber);
+        $reviewLink = "https://bdowb.rw/BK/Admin/cases/?casenumber=" . urlencode($casenumber);
 
         $mailReview->isHTML(true);
         $mailReview->Subject = "New Case Submitted - Ref #$casenumber";
