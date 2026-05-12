@@ -1,0 +1,6 @@
+# Ignore importing to Github config files db.php
+config/db.php
+# Ignore importing files with email credentials
+# Admin/assets/mailer.php
+
+
