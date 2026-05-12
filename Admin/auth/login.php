@@ -26,9 +26,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     else {
 
         if ($admin['must_reset_password'] == 1) {
-            $_SESSION['user_id'] = $admin['id'];
-            header("Location:reset_password.php");
-            exit;
+
+        $_SESSION['user_id'] = $admin['id'];
+
+        // preserve redirect
+        if (!empty($_SESSION['redirect_after_login'])) {
+            $_SESSION['redirect_after_reset'] = $_SESSION['redirect_after_login'];
+        }
+
+        header("Location: ../users/reset_password.php");
+        exit;
         }
 
         if (password_needs_rehash($admin['password_hash'], PASSWORD_DEFAULT)) {
@@ -43,8 +50,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['admin_name'] = $admin['name'];
         $_SESSION['user_type']  = $admin['user_type'];
 
-        header('Location: ../dashboard/index.php');
-        exit;
+        if (isset($_SESSION['redirect_after_login'])) {
+                $redirectUrl = $_SESSION['redirect_after_login'];
+                unset($_SESSION['redirect_after_login']);
+                header("Location: $redirectUrl");
+                exit
+            } 
+        else {
+                header('Location: ../index.php');
+                exit;
+            }
     }
 }
 }

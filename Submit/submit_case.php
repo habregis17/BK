@@ -490,7 +490,7 @@ if ($showIdentity && filter_var($email, FILTER_VALIDATE_EMAIL)) {
 
 // 2️⃣ Reviewer email (always)
 try {
-    $reviewers = ['alert.rw@bdo-ea.com']; // Add more if needed
+    $reviewers = ['arlette.umwari@bdo-ea.com']; // Add more if needed
     foreach ($reviewers as $revEmail) {
         $mailReview = new PHPMailer(true);
         $mailReview->isSMTP();
@@ -503,11 +503,11 @@ try {
 
         $mailReview->setFrom('alert.rw@bdo-ea.com', 'BDO Whistleblowing Platform');
         $mailReview->addAddress($revEmail);
-        // $mailReview->addCC('arlette.umwari@bdo-ea.com', 'Arlette Umwari');
+        $mailReview->addCC('patrick.sibomana@bdo-ea.com', 'Patrick Sibomana');
 
 
         $reporterInfo = ($identity_choice === 'Anonymous') ? 'Anonymous reporter' : htmlspecialchars($case['full_name']);
-        $reviewLink = "https://bdowb.rw/BK/admin/Dashboard/Cases/?casenumber=" . urlencode($casenumber);
+        $reviewLink = "https://bdowb.rw/BK/Admin/Dashboard/Cases/?casenumber=" . urlencode($casenumber);
 
         $mailReview->isHTML(true);
         $mailReview->Subject = "New Case Submitted - Ref #$casenumber";
