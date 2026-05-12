@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $redirectUrl = $_SESSION['redirect_after_login'];
                 unset($_SESSION['redirect_after_login']);
                 header("Location: $redirectUrl");
-                exit
+                exit;
             } 
         else {
                 header('Location: ../index.php');
