@@ -157,6 +157,8 @@ $trendValues = array_values($trendData);
   </div>
 
 </div>
+<?php INCLUDE '../includes/footer.php'; ?>
+
 <script>
 new Chart(document.getElementById('statusChart'), {
   type: 'doughnut',
