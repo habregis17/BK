@@ -69,7 +69,7 @@ return '
 
                 <p>You can access the admin portal using the credentials above and reset your password to your liking</p>
                 <p style="text-align: center;">
-                    <a href="https://bdowb.rw/BK/admin" 
+                    <a href="https://bdowb.rw/BK/Admin" 
                        style="background-color: #ED1A3B; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">
                        Go to Admin Portal
                     </a>
@@ -152,7 +152,7 @@ return '
 
                 <p>You can access the admin portal using the credentials above and reset your password to your liking:</p>
                 <p style="text-align: center;">
-                    <a href="https://bdowb.rw/BK/admin" 
+                    <a href="https://bdowb.rw/BK/Admin" 
                        style="background-color: #ED1A3B; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">
                        Go to Admin Portal
                     </a>
