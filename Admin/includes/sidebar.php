@@ -12,13 +12,13 @@ $isSuperAdmin = ($_SESSION['user_type'] ?? '') === 'Super Admin';
     </a>
     
     <?php if ($_SESSION['user_type'] === 'Super Admin'): ?>
-        <a href="../clients/index.php" class="menu-item">
+        <a href="../Clients/index.php" class="menu-item">
           <i class="fa-solid fa-briefcase"></i><span>Clients</span>
         </a>
     <?php endif; ?>
 
     <?php if ($isSuperAdmin): ?>
-      <a href="../users/index.php" class="menu-item">
+      <a href="../Users/index.php" class="menu-item">
         <i class="fa-solid fa-users"></i><span>Users</span>
       </a>
     <?php endif; ?>

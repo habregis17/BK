@@ -18,7 +18,7 @@ $userType  = $_SESSION['user_type'] ?? '';
 
 <header class="topbar">
   <div class="topbar-left">
-    <img src="../assets/images/ourwhitelogo.png" alt="Org Logo" class="logo">
+    <img src="../assets/images/ourlogo.png" alt="Org Logo" class="logo">
   </div>
   <h2>BDO East Africa(Rwanda) Ltd Whistleblowing Platform</h2>
   <div class="topbar-right">

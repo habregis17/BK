@@ -1,6 +1,4 @@
-body { 
-    font-family: Trebuchet MS; background: #333;; 
-}
+
 .auth-card { 
 width:360px; margin:8% auto; background:white; padding:30px; border-radius:8px; 
 box-shadow:0 0 10px rgba(0,0,0,0.1); 
@@ -18,65 +16,175 @@ button {
     color:#E81A3B; 
 }
 
-/* Layout */
-body { margin:0; font-family: 'Trebuchet MS', sans-serif; background:#E7E7E7; }
-
-*{
-  text-decoration: none;
+/* BDO Design Guidelines - Palette */
+:root {
+  --bdo-red: #E81A3B;
+  --charcoal: #333333;
+  --pale-charcoal: #E7E7E7;
+  --burgundy: #98002e;
+  --slate: #5b6e7f;
+  --ocean: #008fd2;
+  --white: #ffffff;
+  --font-digital: 'Proxima Nova', 'Segoe UI', Roboto, sans-serif;
 }
 
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+
+
+body {
+  font-family: var(--font-digital);
+  background-color: #f9f9f9;
+  color: var(--charcoal);
+  line-height: 1.6;
+}
+
+/* Dashboard Layout */
+.layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: calc(100vh - 70px); /* Adjust based on topbar height */
+}
+
+.content {
+  padding: 30px;
+  background-color: #fdfdfd;
+}
+
+/* Topbar Header */
 .topbar {
-  height:60px;
-  background:#333333;
-  color:white;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:0 20px;
+  background-color: var(--white);
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 25px;
+  border-bottom: 3px solid var(--bdo-red);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
 
-.logo { height:40px; }
+.topbar-left .logo {
+  height: 40px;
+  width: auto;
+}
 
-.user-info { display:flex; align-items:center; gap:10px; }
-.avatar { font-size:32px; }
-.user-text .name { font-weight:600; display:block; }
-.user-text .role { font-size:0.8rem; color:#E7E7E7; }
+.topbar h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--charcoal);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
 
-.layout { display:flex; min-height:calc(100vh - 60px); }
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 
+.avatar {
+  font-size: 2rem;
+  color: var(--slate);
+}
+
+.user-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-text .name {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--charcoal);
+}
+
+.user-text .role {
+  font-size: 0.75rem;
+  color: var(--bdo-red);
+  font-weight: 600;
+}
+
+/* Footer */
+.footer {
+  text-align: center;
+  padding: 20px;
+  font-size: 0.85rem;
+  color: var(--slate);
+  background: var(--pale-charcoal);
+  border-top: 1px solid #ddd;
+}
+
+/* Sidebar Container */
 .sidebar {
-  width:230px;
-  background:#98002e; /* Burgundy */
-  color:white;
-  display:flex;
-  flex-direction:column;
-  justify-content:space-between;
+  background-color: var(--charcoal);
+  color: var(--white);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 20px 0;
+  height: 100%;
 }
 
-.menu { padding-top:15px; }
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
 
 .menu-item {
-  display:flex;
-  align-items:center;
-  gap:12px;
-  padding:12px 20px;
-  color:white;
-  text-decoration:none;
+  display: flex;
+  align-items: center;
+  padding: 14px 25px;
+  color: var(--pale-charcoal);
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border-left: 4px solid transparent;
 }
 
-.menu-item:hover { background:#E81A3B; }
+.menu-item i {
+  width: 25px;
+  font-size: 1.1rem;
+  margin-right: 15px;
+}
 
-.logout { background:#5b6e7f; }
+.menu-item span {
+  font-weight: 500;
+  font-size: 0.95rem;
+}
 
-.content { flex:1; padding:20px; background:#fff; }
+/* Hover & Active States */
+.menu-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--white);
+  border-left-color: var(--slate);
+}
 
-.footer {
-  height:40px;
-  background:#E7E7E7;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:0.85rem;
+.menu-item.active {
+  background-color: var(--bdo-red);
+  color: var(--white);
+  border-left-color: var(--burgundy);
+}
+
+/* Logout Button */
+.sidebar-bottom {
+  border-top: 1px solid rgba(255,255,255,0.1);
+  padding-top: 10px;
+}
+
+.menu-item.logout {
+  color: var(--pale-charcoal);
+}
+
+.menu-item.logout:hover {
+  background-color: var(--burgundy);
+  color: var(--white);
 }
 /* Dashboard Cards */
 .stats-grid {
