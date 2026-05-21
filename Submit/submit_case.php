@@ -488,7 +488,7 @@ if ($showIdentity && filter_var($email, FILTER_VALIDATE_EMAIL)) {
     }
 }
 
-// 2️⃣ Reviewer email (always)
+// Reviewer email (always send, even if reporter is anonymous - they need to review the case)
 try {
     $reviewers = [
         'arlette.umwari@bdo-ea.com',
@@ -506,12 +506,12 @@ try {
 
     $mailReview->setFrom('alert.rw@bdo-ea.com', 'BDO Whistleblowing Platform');
 
-    // ✅ Add all reviewers here
+    // Add all reviewers here
     foreach ($reviewers as $revEmail) {
         $mailReview->addAddress($revEmail);
     }
 
-    // ✅ Add CC once
+    // Add CC
     $mailReview->addCC('patrick.sibomana@bdo-ea.com', 'Patrick Sibomana');
 
     $reporterInfo = ($identity_choice === 'Anonymous')
