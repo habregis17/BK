@@ -490,63 +490,80 @@ if ($showIdentity && filter_var($email, FILTER_VALIDATE_EMAIL)) {
 
 // 2️⃣ Reviewer email (always)
 try {
-    $reviewers = ['arlette.umwari@bdo-ea.com']; // Add more if needed
+    $reviewers = [
+        'arlette.umwari@bdo-ea.com',
+        'vanessa.shami@bdo-ea.com'
+    ];
+
+    $mailReview = new PHPMailer(true);
+    $mailReview->isSMTP();
+    $mailReview->Host       = 'smtp.office365.com';
+    $mailReview->SMTPAuth   = true;
+    $mailReview->Username   = 'alert.rw@bdo-ea.com';
+    $mailReview->Password   = 'Bdo@2023!';
+    $mailReview->SMTPSecure = 'tls';
+    $mailReview->Port       = 587;
+
+    $mailReview->setFrom('alert.rw@bdo-ea.com', 'BDO Whistleblowing Platform');
+
+    // ✅ Add all reviewers here
     foreach ($reviewers as $revEmail) {
-        $mailReview = new PHPMailer(true);
-        $mailReview->isSMTP();
-        $mailReview->Host       = 'smtp.office365.com';
-        $mailReview->SMTPAuth   = true;
-        $mailReview->Username   = 'alert.rw@bdo-ea.com';
-        $mailReview->Password   = 'Bdo@2023!';
-        $mailReview->SMTPSecure = 'tls';
-        $mailReview->Port       = 587;
-
-        $mailReview->setFrom('alert.rw@bdo-ea.com', 'BDO Whistleblowing Platform');
         $mailReview->addAddress($revEmail);
-        $mailReview->addCC('patrick.sibomana@bdo-ea.com', 'Patrick Sibomana');
-
-
-        $reporterInfo = ($identity_choice === 'Anonymous') ? 'Anonymous reporter' : htmlspecialchars($case['full_name']);
-        $reviewLink = "https://bdowb.rw/BK/Admin/cases/?casenumber=" . urlencode($casenumber);
-
-        $mailReview->isHTML(true);
-        $mailReview->Subject = "New Case Submitted - Ref #$casenumber";
-        $mailReview->Body = '
-        
-        <div style="font-family: Trebuchet MS, sans-serif; padding: 10px; color: #333; max-width: 600px; margin: auto;">
-            <div style="text-align: center; margin-bottom: 10px;">
-                <img src="' . $systemLogo . '" alt="BDO Logo" style="max-width: 200px; height: auto;">
-            </div>
-
-            <h2 style="color: #ED1A3B;">New Case Submitted to BK Whistleblower System</h2>
-
-            <p>Dear Reviewer,</p>
-
-            <p>A new case has been submitted via the BK Whistleblower Reporting Platform. Below are the details:</p>
-
-            <p><strong>Case Number:</strong> ' . htmlspecialchars($casenumber) . '</p>
-            <p><strong>Reporter:</strong> ' . $reporterInfo . '</p>
-            <p><strong>Incident Summary:</strong><br/>' . nl2br(htmlspecialchars($case['incident_description'])) . '</p>
-
-            <p>
-                <a href="' . $reviewLink . '" 
-                   style="display: inline-block; background-color: #ED1A3B; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-top: 10px;">
-                   Review Case
-                </a>
-            </p>
-
-            <br/>
-            <p>Best regards,<br/><strong>BDO Whistleblowing Support Team</strong></p>
-
-            <hr style="margin-top: 30px;">
-            <small style="color: #999;">This is an automated notification. Please do not reply.</small>
-        </div>';
-
-        $mailReview->AltBody = "New case submitted. Case Ref: $casenumber. Reporter: $reporterInfo. Review at $reviewLink";
-        $mailReview->addAttachment($tempPdfPath, "Case_$casenumber.pdf");
-        $mailReview->send();
     }
+
+    // ✅ Add CC once
+    $mailReview->addCC('patrick.sibomana@bdo-ea.com', 'Patrick Sibomana');
+
+    $reporterInfo = ($identity_choice === 'Anonymous')
+        ? 'Anonymous reporter'
+        : htmlspecialchars($case['full_name']);
+
+    $reviewLink = "https://bdowb.rw/BK/Admin/cases/?casenumber=" . urlencode($casenumber);
+
+    $mailReview->isHTML(true);
+    $mailReview->Subject = "New Case Submitted - Ref #$casenumber";
+
+    $mailReview->Body = '
+    <div style="font-family: Trebuchet MS, sans-serif; padding: 10px; color: #333; max-width: 600px; margin: auto;">
+        <div style="text-align: center; margin-bottom: 10px;">
+            <img src="' . $systemLogo . '" alt="BDO Logo" style="max-width: 200px; height: auto;">
+        </div>
+
+        <h2 style="color: #ED1A3B;">New Case Submitted to BK Whistleblower System</h2>
+
+        <p>Dear Reviewer,</p>
+
+        <p>A new case has been submitted via the BK Whistleblower Reporting Platform. Below are the details:</p>
+
+        <p><strong>Case Number:</strong> ' . htmlspecialchars($casenumber) . '</p>
+        <p><strong>Reporter:</strong> ' . $reporterInfo . '</p>
+        <p><strong>Incident Summary:</strong><br/>' . nl2br(htmlspecialchars($case['incident_description'])) . '</p>
+
+        <p>
+            <a href="' . $reviewLink . '" 
+               style="display: inline-block; background-color: #ED1A3B; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-top: 10px;">
+               Review Case
+            </a>
+        </p>
+
+        <br/>
+        <p>Best regards,<br/><strong>BDO Whistleblowing Support Team</strong></p>
+
+        <hr style="margin-top: 30px;">
+        <small style="color: #999;">This is an automated notification. Please do not reply.</small>
+    </div>';
+
+    $mailReview->AltBody = "New case submitted. Case Ref: $casenumber. Reporter: $reporterInfo. Review at $reviewLink";
+
+    $mailReview->addAttachment($tempPdfPath, "Case_$casenumber.pdf");
+
+    // ✅ Send once
+    $mailReview->send();
+
+} catch (Exception $e) {
+    echo "Mailer Error: " . $mailReview->ErrorInfo;
 }
+
  catch (Exception $e) {
     error_log("Reviewer Email/PDF Error: " . $e->getMessage());
 }
