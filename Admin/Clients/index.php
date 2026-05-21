@@ -124,24 +124,11 @@ foreach ($assignments as $a) {
         </div>
       </div>
 
-      <hr>
-
-      <h4>Assign Users</h4>
-      <div class="checkbox-grid">
-        <?php foreach ($admins as $admin): ?>
-          <label class="checkbox-item">
-            <input type="checkbox" name="users[]" value="<?= $admin['id'] ?>">
-            <div class="user-info">
-              <strong><?= htmlspecialchars($admin['name']) ?></strong>
-              <small><?= htmlspecialchars($admin['email']) ?></small>
-            </div>
-          </label>
-        <?php endforeach; ?>
-      </div>
-
       <div class="modal-actions">
         <button type="submit" class="primary-btn">Save Client</button>
-        <button type="button" class="btn" onclick="closeAddClientModal()">Cancel</button>
+        <button type="button" class="btn" onclick="closeAddClientModal()">
+          Cancel
+        </button>
       </div>
 
     </form>
