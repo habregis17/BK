@@ -20,7 +20,7 @@ $userType  = $_SESSION['user_type'] ?? '';
   <div class="topbar-left">
     <img src="../assets/images/ourlogo.png" alt="Org Logo" class="logo">
   </div>
-  <h2>BDO East Africa(Rwanda) Ltd Whistleblowing Platform</h2>
+  <h2>BDO East Africa(Rwanda) Ltd Whistleblowing Platform | Backyard</h2>
   <div class="topbar-right">
     <div class="user-info">
       <i class="fa-solid fa-circle-user avatar"></i>

@@ -1789,3 +1789,71 @@ select {
 .badge.primary { background:#E1F2FB; color:#008fd2; }
 .badge.success { background:#E2F4EA; color:#009966; }
 .badge.secondary { background:#eee; color:#555; }
+
+.summary-left h2 {
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Base badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #f4f6f8;
+  color: #333;
+}
+
+/* Status colors */
+.badge.status.closed {
+  background: #e2f4ea;
+  color: #009966;
+}
+
+.badge.status.pending {
+  background: #fff4e5;
+  color: #d76900;
+}
+
+.badge.status.new {
+  background: #e8f2ff;
+  color: #005bbb;
+}
+
+/* Sensitivity */
+.badge.sensitivity.high {
+  background: #fde2e6;
+  color: #98002e;
+}
+
+.badge.sensitivity.medium {
+  background: #fff4e5;
+  color: #d76900;
+}
+
+.badge.sensitivity.low {
+  background: #e2f4ea;
+  color: #009966;
+}
+
+/* Channel */
+.badge.channel {
+  background: #eef3f7;
+}
+
+/* Agent */
+.badge.agent {
+  background: #f1f1f1;
+  color: #444;
+}

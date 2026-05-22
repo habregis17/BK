@@ -160,7 +160,7 @@ function getLanguageIcon($languages)
 
   </div>
 
-  <div class="summary-right">
+  <!-- <div class="summary-right">
     <div class="export-bar">
     <a href="export_pdf.php?casenumber=<?= urlencode($case['casenumber']) ?>" target="_blank" id="export-pdf-btn" onclick="showLoading('PDF'); return false;">
       <i class="fas fa-file-pdf"></i> Export PDF
@@ -170,7 +170,7 @@ function getLanguageIcon($languages)
     </a>
     </div>
 
-  </div>
+  </div> -->
 
 </div>
 
@@ -249,7 +249,7 @@ function getLanguageIcon($languages)
 
 </div>
 
-<div class="detail-card">
+<!-- <div class="detail-card">
   <h3>Attachments</h3>
    <?php
 $files = json_decode($case['files'], true); // Decode JSON string to PHP array
@@ -288,28 +288,10 @@ if (is_array($files) && count($files) > 0): ?>
 <?php else: ?>
   <p><em>No files attached.</em></p>
 <?php endif; ?>
-</div>
+</div> -->
 
-<div class="detail-card">
-  <h3>Activity Timeline</h3>
 
-  <!-- <?php foreach ($comments as $c): ?>
-    <div class="timeline-item <?= $c['comment_type'] ?>">
-      <strong><?= htmlspecialchars($c['created_by']) ?></strong>
-      <span class="time"><?= htmlspecialchars($c['created_at']) ?></span>
-      <p><?= nl2br(htmlspecialchars($c['comment'])) ?></p>
-    </div>
-  <?php endforeach; ?> -->
 
-  <?php foreach ($audits as $a): ?>
-    <div class="timeline-item audit">
-      <strong><?= htmlspecialchars($a['changed_by']) ?></strong>
-      changed status from
-      <em><?= $a['old_status'] ?></em> to <em><?= $a['new_status'] ?></em>
-      <span class="time"><?= $a['changed_at'] ?></span>
-    </div>
-  <?php endforeach; ?>
-</div>
 
 <div class="admin-panel">
 
@@ -328,13 +310,13 @@ if (is_array($files) && count($files) > 0): ?>
     <input type="hidden" name="case_id" value="<?= $case['casenumber'] ?>">
 
     <label>Status</label>
-    <select name="status" id="status-select" onchange="toggleClosureComment()" <?= $isClosed ? 'disabled' : '' ?>>
+    <select name="status" id="status-select" onchange="toggleClosureComment()" disabled>
       <option <?= $case['status']=='Pending'?'selected':'' ?>>Pending</option>
       <option <?= $case['status']=='Closed'?'selected':'' ?>>Closed</option>
     </select>
 
     <label>Sensitivity</label>
-    <select name="sensitivity" id="sensitivity-select" <?= $isClosed ? 'disabled' : '' ?>>
+    <select name="sensitivity" id="sensitivity-select" disabled>
       <option <?= $case['Case_sensitivity']=='Low'?'selected':'' ?>>Low</option>
       <option <?= $case['Case_sensitivity']=='Medium'?'selected':'' ?>>Medium</option>
       <option <?= $case['Case_sensitivity']=='High'?'selected':'' ?>>High</option>
@@ -342,7 +324,7 @@ if (is_array($files) && count($files) > 0): ?>
     </select>
 
     <label>Relevance</label>
-    <select name="relevance" id="relevance-select" <?= $isClosed ? 'disabled' : '' ?>>
+    <select name="relevance" id="relevance-select" disabled>
       <option <?= $case['Case_relevance']=='Relevant'?'selected':'' ?>>Relevant</option>
       <option <?= $case['Case_relevance']=='Irrelevant'?'selected':'' ?>>Irrelevant</option>
       <option <?= $case['Case_relevance']=='Empty'?'selected':'' ?>>Empty</option>
@@ -353,12 +335,6 @@ if (is_array($files) && count($files) > 0): ?>
       <label>Closure Comment (Required)</label>
       <textarea name="closure_comment" <?= $isClosed ? 'readonly' : '' ?>><?= $closureComment ?></textarea>
     </div>
-
-<?php if (!$isClosed): ?>
-    <button class="primary-btn">Update Case</button>
-<?php else: ?>
-    <button class="primary-btn" disabled>Update Case</button>
-<?php endif; ?>
   </form>
 
 </div>

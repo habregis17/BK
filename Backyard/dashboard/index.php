@@ -121,12 +121,10 @@ if (!in_array($sort, $allowedSorts, true)) {
     $sort = 'submitted_at';
 }
 
-
-
-
 /* --------------------------
    FETCH CASES (PAGED)
 --------------------------- */
+
 $dataSql = "
     SELECT
         cases.id,
@@ -169,6 +167,22 @@ $clients_res = $pdo->query("SELECT token, name FROM clients ORDER BY name ASC");
     </div>
 </div>
 
+<?php if (isset($_SESSION['success'])): ?>
+  <div class="alert alert-success">
+    <i class="fa-solid fa-check-circle"></i>
+    <?= htmlspecialchars($_SESSION['success']) ?>
+  </div>
+  <?php unset($_SESSION['success']); ?>
+<?php endif; ?>
+
+<?php if (isset($_SESSION['error'])): ?>
+  <div class="alert alert-error">
+    <i class="fa-solid fa-exclamation-circle"></i>
+    <?= htmlspecialchars($_SESSION['error']) ?>
+  </div>
+  <?php unset($_SESSION['error']); ?>
+<?php endif; ?>
+
 <table class="data-table">
   <thead>
     <tr>
@@ -199,7 +213,7 @@ $clients_res = $pdo->query("SELECT token, name FROM clients ORDER BY name ASC");
       <td><span class="status-badge status-<?= strtolower(str_replace(' ', '-', $case['status'])) ?>"><?= htmlspecialchars($case['status']) ?></span></td>
       <td><?= date('Y-m-d', strtotime($case['submitted_at'])) ?></td>
       <td>
-        <a href="view.php?casenumber=<?= urlencode($case['casenumber']) ?>" class="btn-view">
+        <a href="view_case.php?casenumber=<?= urlencode($case['casenumber']) ?>" class="btn-view">
           <i class="fas fa-eye"></i>View
         </a>
       </td>
@@ -255,12 +269,12 @@ $clients_res = $pdo->query("SELECT token, name FROM clients ORDER BY name ASC");
  <div id="addClientModal" class="modal">
   <div class="modal-content large">
 
-    <h3 style="font-weight: bold;color:#e81a3b">Add New Client</h3>
-<form method="POST" action="add_client.php">
+    <h3 style="font-weight: bold;color:#e81a3b">Add New Case</h3>
+<form method="POST" action="submitcase.php">
       <div class="form-grid">
         <div>
           <label>Concerned Entity</label>
-          <select>
+          <select name="client_token" required>
             <option value="">-- Select Entity --</option>
             <!-- Add dynamically list of clients here -->
              <?php while($row = $clients_res->fetch(PDO::FETCH_ASSOC)): ?>
@@ -270,13 +284,27 @@ $clients_res = $pdo->query("SELECT token, name FROM clients ORDER BY name ASC");
         </div>
 
         <div>
-           <label class="form-label">Received Channel</label>
+           <label class="form-label">Receiving Channel</label>
             <select name="channel" class="form-select" required>
                 <option value="">-- Select Channel --</option>
-                <option value="whatsapp">WhatsApp</option>
-                <option value="Toll free">Toll free</option>
-                <option value="sms">SMS</option>
-                <option value="email">Email</option>
+                <option value="Whatsapp">WhatsApp</option>
+                <option value="Call Center">Call Center</option>
+                <option value="SMS">SMS</option>
+                <option value="Email">Email</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+
+        
+        <div>
+           <label class="form-label">Language Used</label>
+            <select name="language" class="form-select" required>
+                <option value="">-- Select Language --</option>
+                <option value="en">English</option>
+                <option value="fr">French</option>
+                <option value="rw">Kinyarwanda</option>
+                <option value="sw">Swahili</option>
+                
             </select>
         </div>
 
@@ -293,16 +321,16 @@ $clients_res = $pdo->query("SELECT token, name FROM clients ORDER BY name ASC");
 
         <div>
           <label class="form-label">Anonymity</label>
-          <select name="anonymity" class="form-select">
+          <select name="anonymity" class="form-select" required id="identity_choice">
             <option value="">-- Select Anonymity --</option>
               <option value="Anonymous">Anonymous</option>
-              <option value="identifiable to BDO only">Identifiable to BDO only</option>
+              <option value="Identifiable to BDO only">Identifiable to BDO only</option>
               <option value="Identifiable">Identifiable</option>
           </select>
         </div>
 
-        <!-- Only whsitleblower fileds name, email, telephone appear when the selected field above is isdentifiable or identifiable to BDO only -->
-        <div>
+        <!-- Only whsitleblower fileds name, email, telephone appear when the selected field above is dentifiable or identifiable to BDO only -->
+        <div id="identifiable_fields" class="d-none">
           <label class="form-label">Whistleblower Contact</label>
           <input type="text" name="whistleblower_name" class="form-control" placeholder="Whistleblower Name">
           <input type="text" name="whistleblower_email" class="form-control" placeholder="Whistleblower Email">
@@ -329,11 +357,17 @@ $clients_res = $pdo->query("SELECT token, name FROM clients ORDER BY name ASC");
           <label>Please provide a detailed description of the incident(s) you are reporting, including any relevant dates, times, and individuals involved.</label>
           <textarea name="description" rows="5"></textarea>
         </div>
+
+        <div class="file-upload-wrapper full">
+          <label for="incident_evidence" class="custom-file-upload"><i class="fas fa-file-upload"></i></label>
+          <input type="file" id="incident_evidence" name="incident_evidence" multiple>Upload Evidence(If Any)
+          <span id="file-name-display"></span>
+        </div>
         
       </div>
 
       <div class="modal-actions">
-        <button type="submit" class="primary-btn">Save Client</button>
+        <button type="submit" class="primary-btn">Submit Case</button>
         <button type="button" class="btn" onclick="closeAddClientModal()">Cancel</button>
       </div>
 
@@ -342,107 +376,66 @@ $clients_res = $pdo->query("SELECT token, name FROM clients ORDER BY name ASC");
 </div>
 
 
-<script>
-function showExportLoading(type) {
-  const modal = document.getElementById('loading-modal');
-  const title = document.getElementById('loading-title');
-  const message = document.getElementById('loading-message');
-  const progress = document.getElementById('progress-fill');
-  
-  title.textContent = 'Generating ' + type + '...';
-  message.textContent = 'Please wait while we prepare your export.';
-  progress.style.width = '0%';
-  
-  modal.style.display = 'flex';
-  
-  // Animate progress
-  let width = 0;
-  const interval = setInterval(function() {
-    if (width >= 90) {
-      clearInterval(interval);
-    } else {
-      width += Math.random() * 15;
-      if (width > 90) width = 90;
-      progress.style.width = width + '%';
-    }
-  }, 200);
-  
-  // Build the URL with current filters
-  const params = new URLSearchParams(window.location.search);
-  const url = type === 'PDF' 
-    ? 'export_cases_pdf.php?' + params.toString()
-    : 'export_cases_excel.php?' + params.toString();
-  
-  // Fetch the file and download it
-  fetch(url, {
-    headers: {
-      'X-Requested-With': 'XMLHttpRequest'
-    }
-  })
-    .then(response => {
-      if (!response.ok) throw new Error('Export failed');
-      // Extract filename from Content-Disposition header if available
-      const contentDisposition = response.headers.get('Content-Disposition');
-      let filename = 'Cases_Export.' + (type === 'PDF' ? 'pdf' : 'xlsx');
-      
-      if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-        if (filenameMatch) {
-          filename = filenameMatch[1].replace(/['"]/g, '');
-        }
-      }
-      
-      return response.blob().then(blob => ({ blob, filename }));
-    })
-    .then(data => {
-      // Create a download link with proper filename
-      const downloadLink = document.createElement('a');
-      downloadLink.href = window.URL.createObjectURL(data.blob);
-      downloadLink.download = data.filename;
-      downloadLink.style.display = 'none';
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-      
-      // Close modal when file is ready
-      clearInterval(interval);
-      progress.style.width = '100%';
-      title.textContent = type + ' Ready!';
-      message.textContent = 'Your file is downloading...';
-      
-      setTimeout(function() {
-        modal.style.display = 'none';
-      }, 1500);
-    })
-    .catch(error => {
-      clearInterval(interval);
-      modal.style.display = 'none';
-      alert('Export failed. Please try again.');
-      console.error('Export error:', error);
-    });
-}
-</script>
-
 <?php require '../includes/footer.php'; ?>
 
+<!-- Hide unhide wb informer -->
 <script>
-document.getElementById('identity_choice').addEventListener('change', function() {
+
+function updateFields() {
+    const select = document.getElementById('identity_choice');
     const container = document.getElementById('identifiable_fields');
-    if (this.value !== 'Anonymous') {
-        container.classList.remove('d-none');
+
+    if (!select || !container) return;
+
+    const value = select.value;
+
+    if (value === 'Identifiable' || value === 'Identifiable to BDO only') {
+        container.style.display = 'block';   // show
     } else {
-        container.classList.add('d-none');
+        container.style.display = 'none';    // hide
     }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const select = document.getElementById('identity_choice');
+
+    if (select) {
+        select.addEventListener('change', updateFields);
+    }
+
+    updateFields(); // initial state
 });
 
-
-</script>
-<script>
 function openAddClientModal() {
-  document.getElementById('addClientModal').style.display = 'flex';
+    const modal = document.getElementById('addClientModal');
+    modal.style.display = 'flex';
+
+    //ensure correct state when opening modal
+    setTimeout(updateFields, 50);
 }
 
 function closeAddClientModal() {
-  document.getElementById('addClientModal').style.display = 'none';
+    document.getElementById('addClientModal').style.display = 'none';
 }
+
+
+</script>
+
+<script>
+document.getElementById('incident_evidence').addEventListener('change', function() {
+  const fileList = this.files;
+  const display = document.getElementById('file-name-display');
+
+  if (fileList.length === 0) {
+    display.textContent = 'No files selected';
+  } else if (fileList.length === 1) {
+    display.textContent = fileList[0].name;
+  } else {
+    let names = [];
+    for (let i = 0; i < fileList.length; i++) {
+      names.push(fileList[i].name);
+    }
+    display.textContent = names.join(', ');
+  }
+});
 </script>
