@@ -1,13 +1,12 @@
 <?php
+session_start();
 require '../config/db.php';
 require '../config/images.php';
 require '../languages/index.php';
-// Save it in session so it persists
-$_SESSION['lang'] = $lang;
+
 // Get language from URL, session, or default to English
 $lang = $_GET['lang'] ?? $_SESSION['lang'] ?? 'en';
-
-
+$_SESSION['lang'] = $lang;
 
 $token = $_GET['token'] ?? '';
 $stmt = $pdo->prepare("SELECT * FROM clients WHERE token = ?");
@@ -616,6 +615,7 @@ document.getElementById('incident_evidence').addEventListener('change', function
       <div class="form-step active" id="step-1">
             <!-- Hidden token field -->
     <input type="hidden" name="token" value="<?= htmlspecialchars($token) ?>">
+    <input type="hidden" name="lang" value="<?= htmlspecialchars($lang) ?>">
         <label><?php echo $lang_data[$lang]['Specify_type']; ?> </label>
         <div class="radio-group">
           <label><input type="radio" name="affiliation" value="Employee" required><?php echo $lang_data[$lang]['employee']; ?> </label>

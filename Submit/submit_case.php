@@ -1,5 +1,6 @@
 <?php
 // echo "It is reaching here";
+session_start();
 
 require '../config/db.php';
 // echo "It is reaching here2";
@@ -33,7 +34,7 @@ error_reporting(E_ALL);
 //     error_log(date('[Y-m-d H:i:s] ') . $message . PHP_EOL, 3, $logFile);
 // }
 // Get language from URL, session, or default to English
-$lang = $_GET['lang'] ?? $_SESSION['lang'] ?? 'en';
+$lang = $_POST['lang'] ?? $_GET['lang'] ?? $_SESSION['lang'] ?? 'en';
 
 // Save it in session so it persists
 $_SESSION['lang'] = $lang;
@@ -560,7 +561,8 @@ try {
     // ✅ Send once
     $mailReview->send();
 
-} catch (Exception $e) {
+} 
+catch (Exception $e) {
     echo "Mailer Error: " . $mailReview->ErrorInfo;
 }
 
