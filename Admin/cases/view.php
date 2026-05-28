@@ -1,20 +1,15 @@
 <?php
+
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 require '../auth/auth_check.php';
 $pageTitle = 'Case View';
 require '../includes/header.php';
 require '../includes/sidebar.php';
 require '../../config/db.php';
-$rawFiles = $case['files'] ?? '';
-$files = [];
 
-if ($rawFiles) {
-    $decoded = json_decode($rawFiles, true);
-    if (is_array($decoded)) {
-        $files = $decoded;
-    } else {
-        $files = array_filter(explode(',', $rawFiles)); // fallback if not JSON
-    }
-}
 
 
 $caseNumber = $_GET['casenumber'] ?? '';
@@ -31,6 +26,18 @@ $case = $stmt->fetch();
 
 if (!$case) {
   die("Case not found.");
+}
+
+$rawFiles = $case['files'] ?? '';
+$files = [];
+
+if ($rawFiles) {
+    $decoded = json_decode($rawFiles, true);
+    if (is_array($decoded)) {
+        $files = $decoded;
+    } else {
+        $files = array_filter(explode(',', $rawFiles)); // fallback if not JSON
+    }
 }
 
 /* Fetch comments */
