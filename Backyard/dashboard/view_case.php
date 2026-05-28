@@ -1,9 +1,11 @@
 <?php
+// 
 require '../auth/auth_check.php';
 $pageTitle = 'Case View';
 require '../includes/header.php';
 require '../includes/sidebar.php';
 require '../../config/db.php';
+
 $rawFiles = $case['files'] ?? '';
 $files = [];
 
@@ -68,28 +70,27 @@ $showPII = in_array($identity, [
 ]);
 
 $channel = $case['channel'] ;
-
 function getChannelIcon($channel) {
-
-    return match($channel) {
-        'Website'     => 'fa-globe',
-        'Email'   => 'fa-envelope',
-        'Call Center'   => 'fa-phone',
-        'Walk-in' => 'fa-person-walking',
-        'WhatsApp' => 'fa-whatsapp',
-        'SMS' => 'fa-sms',
-        'Other' => 'fa-ellipsis-h',
-        default   => 'fa-share-nodes'
-    };
+    switch ($channel) {
+        case 'Website': return 'fa-globe';
+        case 'Email': return 'fa-envelope';
+        case 'Call Center': return 'fa-phone';
+        case 'Walk-in': return 'fa-person-walking';
+        case 'WhatsApp': return 'fa-whatsapp';
+        case 'SMS': return 'fa-sms';
+        case 'Other': return 'fa-ellipsis-h';
+        default: return 'fa-share-nodes';
+    }
 }
 
 $languages = $case['language'] ?? '';   
 function getLanguageIcon($languages)
- {   
-  return match($languages){              
-    default      => 'fa-language'};
+ {
+  switch ($languages) {
+    default:
+      return 'fa-language';
   }
-
+}
 ?>
 
 <?php if (!empty($_SESSION['success'])): ?>
