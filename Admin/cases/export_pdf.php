@@ -43,8 +43,8 @@ if (!empty($comments)) {
   reset($comments);
 }
 
-// ✅ Replace SVG logo with working PNG
-$systemLogo = 'https://upload.wikimedia.org/wikipedia/commons/9/9e/BDO_Deutsche_Warentreuhand_Logo.svg';
+// ✅ Use a PNG instead of SVG to prevent Dompdf fatal crashes
+$systemLogo = 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/BDO_Deutsche_Warentreuhand_Logo.svg/500px-BDO_Deutsche_Warentreuhand_Logo.svg.png';
 $clientLogo = 'https://images.africanfinancials.com/rw-bok-logo-min.png';
 $html = '
 <!DOCTYPE html>
