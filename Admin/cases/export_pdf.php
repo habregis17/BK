@@ -24,7 +24,7 @@ $case = $stmt->fetch();
 if (!$case) die("Case not found.");
 
 $identity = strtolower($case['identity_choice']);
-$showIdentity = in_array($identity, ['identifiable', 'identifiable_to_bdo_only', 'identified']);
+$showIdentity = in_array($identity, ['identifiable', 'identifiable to bdo only', 'identified']);
 
 
 /* Fetch comments */

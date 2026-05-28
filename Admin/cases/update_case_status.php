@@ -35,12 +35,14 @@ $pdo->prepare("
         VALUES (?, ?, ?, ?)
     ")->execute([$caseId, $currentStatus, $newStatus, $changedBy]);
 
-$pdo->prepare("
+if ($closureComment !== '') {
+    $pdo->prepare("
             INSERT INTO case_comments
             (case_id, comment, comment_type, created_by)
             VALUES (?, ?, 'internal', ?)
         ")->execute([$caseId, $closureComment, $changedBy]);
-    
+}
+
 if ($currentStatus !== $newStatus) {
 
     if ($newStatus === 'Closed') {

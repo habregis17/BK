@@ -266,8 +266,7 @@ function getLanguageIcon($languages)
 <div class="detail-card">
   <h3>Attachments</h3>
    <?php
-$files = json_decode($case['files'], true); // Decode JSON string to PHP array
-
+// The $files array was already processed at the top of the script with fallback logic
 if (is_array($files) && count($files) > 0): ?>
   <label><strong>Attached File(s)</strong></label>
   <div class="file-list">
