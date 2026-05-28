@@ -171,6 +171,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <button type="submit">Enter</button>
   </form>
 
+  <p style="margin-top: 1rem; font-size: 0.95rem; color: #555;">
+    Want to report a case instead? <a href="../../Backyard" style="color: #e81a3b; font-weight: 700; text-decoration: none;">Go to Backyard reporting</a>
+  </p>
+
 </div>
 </body>
 </html>

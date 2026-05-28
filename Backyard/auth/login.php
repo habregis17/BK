@@ -171,6 +171,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <button type="submit">Enter</button>
   </form>
 
+  <p style="margin-top: 1rem; font-size: 0.95rem; color: #555;">
+    Want to report review cases instead? <a href="../../Admin" style="color: #e81a3b; font-weight: 700; text-decoration: none;">Go to Admin Dashboard</a>
+  </p>
+
 </div>
 </body>
 </html>
