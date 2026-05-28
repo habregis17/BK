@@ -100,10 +100,12 @@ function getChannelIcon($channel) {
 
 $languages = $case['language'] ?? '';   
 function getLanguageIcon($languages)
- {   
-  return match($languages){              
-    default      => 'fa-language'};
+ {
+  switch ($languages) {
+    default:
+      return 'fa-language';
   }
+}
 
 ?>
 
@@ -266,7 +268,6 @@ function getLanguageIcon($languages)
 <div class="detail-card">
   <h3>Attachments</h3>
    <?php
-// The $files array was already processed at the top of the script with fallback logic
 if (is_array($files) && count($files) > 0): ?>
   <label><strong>Attached File(s)</strong></label>
   <div class="file-list">
