@@ -1,5 +1,4 @@
 <?php
-
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -9,7 +8,6 @@ $pageTitle = 'Case View';
 require '../includes/header.php';
 require '../includes/sidebar.php';
 require '../../config/db.php';
-
 
 $caseNumber = $_GET['casenumber'] ?? '';
 if (!$caseNumber) {
