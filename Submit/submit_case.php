@@ -24,8 +24,8 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
 // Enable error reporting for dev (remove in production)
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
+// ini_set('display_errors', 1);
+// error_reporting(E_ALL);
 
 // Optional: error log file path
 // $logFile = __DIR__ . '/../logs/error_log.txt';
@@ -57,6 +57,7 @@ $incident_when        = $_POST['incident_when'] ?? null;
 $incident_where       = $_POST['incident_where'] ?? null;
 $incident_division    = $_POST['incident_division'] ?? null;
 $case_manager    = "alert.rw@bdo-ea.com";
+$channel = 'Website';
 
 // Generate case number
 try {
@@ -151,8 +152,9 @@ try {
         incident_where,
         incident_division,
         case_manager,
-        language
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        language,
+        channel
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
     $success = $stmt->execute([
         $case_number,
@@ -171,7 +173,7 @@ try {
         $incident_division,
         $case_manager,
         $lang,
-        
+        $channel
     ]);
 
 } catch (PDOException $e) {

@@ -86,7 +86,7 @@ function getChannelIcon($channel) {
         'Other' => 'fa-ellipsis-h',
         default   => 'fa-share-nodes'
     };
-}
+    }
 
 $languages = $case['language'] ?? '';   
 function getLanguageIcon($languages)
@@ -136,23 +136,22 @@ function getLanguageIcon($languages)
         <?= htmlspecialchars($case['status']) ?>
       </span>
 
-      <!-- CHANNEL -->
-      <span class="badge channel <?= strtolower($case['channel']) ?>">
-        <i class="fa-solid <?= getChannelIcon($case['channel']) ?>"></i>
-        <?= htmlspecialchars($case['channel']) ?>
+        <!-- SENSITIVITY -->
+      <span class="badge sensitivity <?= strtolower($case['Case_sensitivity']) ?>">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <?= htmlspecialchars($case['Case_sensitivity']) ?>
       </span>
 
-      
+      <!-- Language -->
       <span class="badge language">
         <i class="fa-solid <?= getLanguageIcon($languages) ?>"></i>
         <?= htmlspecialchars($languages ?: 'Unknown') ?>
       </span>
 
-
-      <!-- SENSITIVITY -->
-      <span class="badge sensitivity <?= strtolower($case['Case_sensitivity']) ?>">
-        <i class="fa-solid fa-triangle-exclamation"></i>
-        <?= htmlspecialchars($case['Case_sensitivity']) ?>
+      <!-- Channel -->
+      <span class="badge channel">
+        <i class="fa-solid <?= getChannelIcon($channel) ?>"></i>
+        <?= htmlspecialchars($channel ?: 'Unknown') ?>
       </span>
 
       <!-- AGENT -->
