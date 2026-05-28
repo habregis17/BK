@@ -1,8 +1,20 @@
 <?php
 // Trigger error first
+
+error_reporting(E_ALL);
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+
+// Force fatal error display
+register_shutdown_function(function () {
+    $error = error_get_last();
+    if ($error !== NULL) {
+        echo "<pre>";
+        print_r($error);
+        echo "</pre>";
+    }
+});
+
 
 require '../auth/auth_check.php';
 $pageTitle = 'Case View';
