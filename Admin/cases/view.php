@@ -11,7 +11,6 @@ require '../includes/sidebar.php';
 require '../../config/db.php';
 
 
-
 $caseNumber = $_GET['casenumber'] ?? '';
 if (!$caseNumber) {
   die("Invalid case number.");
