@@ -5,6 +5,15 @@ require_once __DIR__ . '/config/images.php';
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-5KXN1T7MVB"></script>
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-5KXN1T7MVB');
+    </script>
     <meta charset="UTF-8" />
     <title>Welcome - BK WhistleBlower</title>
     <link rel="icon" type="image/x-icon" href="<?php echo FAVICON_URL; ?>">
