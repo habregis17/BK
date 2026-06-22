@@ -6,11 +6,10 @@ require '../../utils/vendor/autoload.php'; // Adjust this if using Composer else
 // load translations
 require '../../languages/index.php';
 
-// Get language from URL, session, or default to English
-$lang = $_GET['lang'] ?? $_SESSION['lang'] ?? 'en';
-
-// Save it in session so it persists
+// Language used to return the copy in the
+$lang = $_POST['lang'] ?? $_GET['lang'] ?? $_SESSION['lang'] ?? 'en';
 $_SESSION['lang'] = $lang;
+
 
 use Dompdf\Dompdf;
 use Dompdf\Options;

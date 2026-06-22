@@ -1,5 +1,9 @@
 <?php
 session_start();
+
+$redirect = $_GET['redirect'] ?? '/BK/Admin/';
+$_SESSION['redirect_after_login'] = $redirect;
+
 require '../../config/db.php';
 
 $error = null;
@@ -53,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['user_type']  = $admin['user_type'];
 
         if (isset($_SESSION['redirect_after_login'])) {
-                $redirectUrl = $_SESSION['redirect_after_login'];
+                $redirectUrl = $_SESSION['redirect_after_login'] ?? '/BK/Admin/';
                 unset($_SESSION['redirect_after_login']);
                 header("Location: $redirectUrl");
                 exit;

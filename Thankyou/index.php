@@ -137,6 +137,7 @@ $casenumber = $_GET['casenumber'] ?? '';
             <label for="receipt_email"><?php echo $lang_data[$lang]['enteremail']; ?></label>
             <input type="email" name="receipt_email" id="receipt_email" required />
             <input type="hidden" name="casenumber" value="<?= htmlspecialchars($casenumber) ?>" />
+            <input type="hidden" name="lang" value="<?= htmlspecialchars($lang) ?>" />
 
             <button type="submit" class="button"><?php echo $lang_data[$lang]['sendreceipt']; ?></button>
             <a href

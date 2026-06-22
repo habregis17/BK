@@ -497,7 +497,6 @@ try {
         'arlette.umwari@bdo-ea.com',
         'vanessa.shami@bdo-ea.com'
     ];
-
     $mailReview = new PHPMailer(true);
     $mailReview->isSMTP();
     $mailReview->Host       = 'smtp.office365.com';
