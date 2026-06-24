@@ -43,7 +43,7 @@ $html = '
 <meta charset="UTF-8" />
 <title>Case Report ' . htmlspecialchars($case['casenumber']) . '</title>
 <style>
-  body { font-family: "Trebuchet MS", sans-serif; color: #333; margin: 30px; }
+  body { font-family: "Proxima Nova", sans-serif; color: #333; margin: 30px; }
   header { text-align: center; margin-bottom: 30px; }
   .logo-row { display: flex; justify-content: space-between; align-items: center; }
   .logo-row img { height: 60px; max-width: 45%; }
@@ -161,7 +161,7 @@ try {
     $mail->isHTML(true);
     $mail->Subject = $lang_data[$lang]['email_title'] . " - Ref #$case_token";
 $mail->Body = '
-<div style="font-family: Trebuchet MS, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: auto;">
+<div style="font-family: Proxima Nova, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: auto;">
     <div style="text-align: center; margin-bottom: 20px;">
         <img src="' . $systemLogo . '" alt="BDO Logo" style="max-width: 200px; height: auto;">
     </div>

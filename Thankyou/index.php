@@ -19,7 +19,7 @@ $casenumber = $_GET['casenumber'] ?? '';
     <link rel="icon" type="image/x-icon" href="<?php echo FAVICON_URL; ?>">
     <style>
         body {
-            font-family: 'Trebuchet MS', sans-serif;
+            font-family: 'Proxima Nova', sans-serif;
             padding: 2rem;
             background: url('<?php echo BACKGROUND_IMAGE_URL; ?>') no-repeat center center;
             /* background-size: cover; */

@@ -35,7 +35,7 @@ if (!$client) die("Invalid client token.");
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     body {
-      font-family: 'Trebuchet MS', sans-serif;
+      font-family: 'Proxima Nova', sans-serif;
       background: url('<?php echo BACKGROUND_IMAGE_URL; ?>') center center fixed;
       background-size: cover;
       background-attachment: fixed;
@@ -45,7 +45,7 @@ if (!$client) die("Invalid client token.");
       margin: 0;
       padding: 2rem 1rem;
       min-height: 100vh;
-      color: #333;
+      color: #000000;
     }
 
     .container {
@@ -124,7 +124,7 @@ if (!$client) die("Invalid client token.");
       display: block;
       margin-top: 0.5rem;
       font-size: 0.85rem;
-      color: #666;
+      color: #060000;
     }
 
     .step.active .step-label {
@@ -170,7 +170,7 @@ if (!$client) die("Invalid client token.");
 
     p, li {
       font-size: 1rem;
-      color: #555;
+      color: #0c0000;
       line-height: 1.7;
     }
 
@@ -190,7 +190,7 @@ if (!$client) die("Invalid client token.");
       display: block;
       margin: 1.5rem 0 0.5rem;
       font-weight: 600;
-      color: #444;
+      color: #000000;
       font-size: 1rem;
     }
 
@@ -206,7 +206,7 @@ if (!$client) die("Invalid client token.");
       border-radius: 8px;
       transition: all 0.3s ease;
       box-sizing: border-box;
-      font-family: 'Trebuchet MS', sans-serif;
+      font-family: 'Proxima Nova', sans-serif;
       background: #fff;
     }
 
@@ -321,7 +321,7 @@ if (!$client) die("Invalid client token.");
       border-radius: 8px;
       cursor: pointer;
       transition: all 0.3s ease;
-      font-family: 'Trebuchet MS', sans-serif;
+      font-family: 'Proxima Nova', sans-serif;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }

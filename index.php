@@ -26,7 +26,7 @@ require_once __DIR__ . '/config/images.php';
         }
 
         body {
-            font-family: 'Trebuchet MS', sans-serif;
+            font-family: 'Proxima Nova', sans-serif;
             background: url('<?php echo BACKGROUND_IMAGE_URL; ?>') center center fixed;
             background-size: cover;
             background-attachment: fixed;
@@ -90,7 +90,7 @@ require_once __DIR__ . '/config/images.php';
         }
 
         .language-guide {
-            font-family: 'Trebuchet MS', sans-serif;
+            font-family: 'Proxima Nova', sans-serif;
             font-size: 0.95rem;
             line-height: 1.8;
             margin-bottom: 2.5rem;

@@ -56,7 +56,7 @@ if (isset($_GET['consent'])) {
       <link rel="icon" type="image/x-icon" href="<?php echo FAVICON_URL; ?>">
     <style>
         body { 
-            font-family: 'Trebuchet Ms', sans-serif; padding: 2rem;   background: url('<?php echo BACKGROUND_IMAGE_URL; ?>')  center center fixed;
+            font-family: 'Proxima Nova', sans-serif; padding: 2rem;   background: url('<?php echo BACKGROUND_IMAGE_URL; ?>')  center center fixed;
   background-size: cover;
   background-attachment: fixed;
   background-repeat: no-repeat;
@@ -100,7 +100,7 @@ if (isset($_GET['consent'])) {
             cursor: pointer; 
             border-radius: 4px; 
             border: none; 
-            font-family: 'Trebuchet Ms';
+            font-family: 'Proxima Nova', sans-serif;
         }
         .button-group {
             display: flex;
