@@ -152,7 +152,7 @@ try {
     $mail->SMTPAuth   = true;
     $mail->Username   = 'alert.rw@bdo-ea.com'; // Your Outlook email
     $mail->Password   = 'Bdo@2023!';         // App password or real password (if allowed)
-    $mail->SMTPSecure = 'tls';                       // Encryption
+    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;                      // Encryption
     $mail->Port       = 587;                         // TLS port
 
     $mail->setFrom('alert.rw@bdo-ea.com', 'BDO Whistleblowing Platform');

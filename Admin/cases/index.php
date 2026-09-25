@@ -264,16 +264,53 @@ $cases = $dataStmt->fetchAll(PDO::FETCH_ASSOC);
     of <?= $totalRows ?>
   </span>
 <!-- Pagination -->
-  <div class="pagination">
-    <?php for ($p=1; $p<=$totalPages; $p++): ?>
+  <!-- Pagination -->
+<div class="pagination">
+  <?php if ($totalPages > 1): ?>
+    <?php
+      $range = 2; // Number of page links to show before and after the active page
+      $start = max(1, $page - $range);
+      $end   = min($totalPages, $page + $range);
+    ?>
+
+    <!-- Previous Page Link -->
+    <?php if ($page > 1): ?>
+      <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page - 1])) ?>">&laquo; Prev</a>
+    <?php endif; ?>
+
+    <!-- First Page + Ellipsis -->
+    <?php if ($start > 1): ?>
+      <a href="?<?= http_build_query(array_merge($_GET, ['page' => 1])) ?>" class="<?= $page === 1 ? 'active' : '' ?>">1</a>
+      <?php if ($start > 2): ?>
+        <span class="pagination-ellipsis">&hellip;</span>
+      <?php endif; ?>
+    <?php endif; ?>
+
+    <!-- Page Numbers Range -->
+    <?php for ($p = $start; $p <= $end; $p++): ?>
       <a
-        href="?<?= http_build_query(array_merge($_GET,['page' => $p])) ?>"
-        class="<?= $p==$page ? 'active' : '' ?>"
+        href="?<?= http_build_query(array_merge($_GET, ['page' => $p])) ?>"
+        class="<?= $p === $page ? 'active' : '' ?>"
       >
         <?= $p ?>
       </a>
     <?php endfor; ?>
-  </div>
+
+    <!-- Ellipsis + Last Page -->
+    <?php if ($end < $totalPages): ?>
+      <?php if ($end < $totalPages - 1): ?>
+        <span class="pagination-ellipsis">&hellip;</span>
+      <?php endif; ?>
+      <a href="?<?= http_build_query(array_merge($_GET, ['page' => $totalPages])) ?>" class="<?= $page === $totalPages ? 'active' : '' ?>"><?= $totalPages ?></a>
+    <?php endif; ?>
+
+    <!-- Next Page Link -->
+    <?php if ($page < $totalPages): ?>
+      <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page + 1])) ?>">Next &raquo;</a>
+    <?php endif; ?>
+
+  <?php endif; ?>
+</div>
 
   <form method="GET" class="per-page">
     <?php foreach ($_GET as $k => $v):

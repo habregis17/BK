@@ -8,6 +8,7 @@ require '../../config/db.php';
 
 $error = null;
 
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $email = trim($_POST['email'] ?? '');
@@ -178,6 +179,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <p style="margin-top: 1rem; font-size: 0.95rem; color: #555;">
     Want to report a case instead? <a href="../../Backyard" style="color: #e81a3b; font-weight: 700; text-decoration: none;">Go to Backyard reporting</a>
   </p>
+
 
 </div>
 </body>
