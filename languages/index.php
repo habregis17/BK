@@ -74,7 +74,7 @@ Hakurikijwe ibiteganywa na Politiki yo gutanga amakuru ku byaha, ku bikorwa cyan
         <ol>
             <li>Izina</li>
             <li>Aderesi ya Email</li>
-            <li>nimero ya Telefone</li>
+            <li>Nimero ya Telefone</li>
         </ol>
         <p>Ifishi irimo n’ibibazo bitafatwa nk’amakuru y’ibanga, ariko nayo irabungabungwa kimwe n’ayandi.</p>
         <p>Niba utanze andi makuru mu gice cy’inyandiko cyangwa ahandi hateganyijwe, nayo azakusanywa akoreshwe.</p>
@@ -128,13 +128,13 @@ Hakurikijwe ibiteganywa na Politiki yo gutanga amakuru ku byaha, ku bikorwa cyan
         'submitreport' => 'Ohereza',
         'thankyou' => 'Murakoze',
         'thankyouforreport' => 'Murakoze Gutanga Amakuru',
-        'thankyoumessagesuccess' => 'Raporo yawe yo gutangaza amakuru yatanzwe neza. Hasi nimero yawe yihariye yo kwifashisha:',
-        'casenumbertext' => 'nimero Yihariye ya Dosiye',
+        'thankyoumessagesuccess' => 'Raporo yawe yo gutangaza amakuru yatanzwe neza. Hasi Nimero yawe yihariye yo kwifashisha:',
+        'casenumbertext' => 'Nimero Yihariye ya Dosiye',
         'wouldyouliketosendreport' => 'Urifuza kwakira kopi ya Raporo Yawe?',
         'enteremail' => 'Shiramo Imeri yawe',
         'sendreceipt' => 'Ohereza Kopi',
         'sendreceiptno' => 'Oya, Ndanyuzwe',
-        'emailreceiptdisclaimer' => 'Imeri iraba ikubiyemo amakuru watanze hamwe nimero ya dosiye.',
+        'emailreceiptdisclaimer' => 'Imeri iraba ikubiyemo amakuru watanze hamwe Nimero ya dosiye.',
         'receiptsuccessmessage' => 'Byakunze: Murimurirwa ku yindi Paji mu masegonda 5........Dosiye yoherejwe neza kuri',
         'export_system_name' => 'Sisitemu banga yo Gutanga Amakuru',
         'export_submitted_at' => 'Byatanzwe',
@@ -149,7 +149,7 @@ Hakurikijwe ibiteganywa na Politiki yo gutanga amakuru ku byaha, ku bikorwa cyan
         'email_best_regards' => 'Murakoze',
         'submitting_title' => 'Kohereza Raporo Yawe',
         'submitting_text' => 'Tegereza mu gihe twohereza raporo yawe...',
-        'processing_text' => 'Turi gutunganya raporo no kuguha nimero yayo...',
+        'processing_text' => 'Turi gutunganya raporo no kuguha Nimero yayo...',
         'network_error' => 'Ikibazo cya interineti. Nyamuneka genzura mu muyoboro wawe wongere ugerageze.',
         'submit_error' => 'Habaye ikibazo mu kohereza raporo yawe. Nyamuneka wongere ugerageze.',
 
@@ -407,7 +407,7 @@ Conformément à la Politique de Lancement d’Alerte, la Banque de Kigali garan
     "submitreport" => "Soumettre le rapport",
     "thankyou" => "Merci",
     "thankyouforreport" => "Merci pour votre rapport",
-    "thankyoumessagesuccess" => "Votre rapport a ete soumis avec succes. Voici votre nimero de dossier unique :",
+    "thankyoumessagesuccess" => "Votre rapport a ete soumis avec succes. Voici votre Nimero de dossier unique :",
     "casenumbertext" => "Numéro de dossier",
     "wouldyouliketosendreport" => "Souhaitez-vous recevoir une copie de votre rapport ?",
     "enteremail" => "Entrez votre adresse e-mail :",
