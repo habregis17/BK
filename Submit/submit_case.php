@@ -494,8 +494,8 @@ if ($showIdentity && filter_var($email, FILTER_VALIDATE_EMAIL)) {
 // Reviewer email (always send, even if reporter is anonymous - they need to review the case)
 try {
     $reviewers = [
-        'arlette.umwari@bdo-ea.com',
         'vanessa.shami@bdo-ea.com'
+      
     ];
     $mailReview = new PHPMailer(true);
     $mailReview->isSMTP();
@@ -514,7 +514,7 @@ try {
     }
 
     // Add CC
-    $mailReview->addCC('patrick.sibomana@bdo-ea.com', 'Patrick Sibomana');
+    $mailReview->addCC('solomon.kiplimo@bdo-ea.com', 'Solomon Kiplimo');
 
     $reporterInfo = ($identity_choice === 'Anonymous')
         ? 'Anonymous reporter'

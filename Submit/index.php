@@ -582,6 +582,79 @@ document.getElementById('incident_evidence').addEventListener('change', function
   }
 });
 </script>
+<!-- Blocking Multiple Submission -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('whistleForm');
+  const modal = document.getElementById('submittingModal');
+  const progressBar = document.getElementById('upload-progress-bar');
+  const progressPercentage = document.getElementById('progress-percentage');
+  const statusLabel = document.getElementById('progress-status-text');
+  const titleLabel = document.getElementById('progress-title-text');
+  const langMessages = {
+    submittingTitle: "<?php echo $lang_data[$lang]['submitting_title'] ?? 'Submitting Your Report'; ?>",
+    submittingText: "<?php echo $lang_data[$lang]['submitting_text'] ?? 'Please wait...'; ?>",
+    processingText: "<?php echo $lang_data[$lang]['processing_text'] ?? 'Processing...'; ?>",
+    networkError: "<?php echo $lang_data[$lang]['network_error'] ?? 'Network error.'; ?>",
+    submitError: "<?php echo $lang_data[$lang]['submit_error'] ?? 'An error occurred.'; ?>"
+  };
+
+  if (form) {
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const submitBtn = form.querySelector('button[type="submit"]');
+      if (submitBtn.disabled) return;
+      submitBtn.disabled = true;
+
+      // Populate modal with localized strings
+      titleLabel.textContent = langMessages.submittingTitle;
+      statusLabel.textContent = langMessages.submittingText;
+      modal.style.display = 'flex';
+
+      const formData = new FormData(form);
+      const xhr = new XMLHttpRequest();
+
+      xhr.open('POST', form.action, true);
+
+      // Track file upload progress
+      xhr.upload.addEventListener('progress', function (e) {
+        if (e.lengthComputable) {
+          const percentComplete = Math.round((e.loaded / e.total) * 100);
+          progressBar.style.width = percentComplete + '%';
+          progressPercentage.textContent = percentComplete + '%';
+          
+          if (percentComplete === 100) {
+            statusLabel.textContent = langMessages.processingText;
+          }
+        }
+      });
+
+      // Handle server response
+      xhr.onload = function () {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          document.open();
+          document.write(xhr.responseText);
+          document.close();
+        } else {
+          modal.style.display = 'none';
+          submitBtn.disabled = false;
+          alert(langMessages.submitError);
+        }
+      };
+
+      xhr.onerror = function () {
+        modal.style.display = 'none';
+        submitBtn.disabled = false;
+        alert(langMessages.networkError);
+      };
+
+      xhr.send(formData);
+    });
+  }
+});
+</script>
+
 </head>
 <body>
   <div class="container">
@@ -750,5 +823,35 @@ document.getElementById('incident_evidence').addEventListener('change', function
       goToStep(1);
     });
   </script>
+ <!-- Submission Progress Modal Overlay -->
+<div id="submittingModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
+  <div style="background: #fff; padding: 2.5rem; border-radius: 12px; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+    <div class="spinner" style="border: 4px solid #f3f3f3; border-top: 4px solid #ED1A3B; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto 1.5rem auto;"></div>
+    
+    <!-- Dynamic Title & Text using language config -->
+    <h3 id="progress-title-text" style="color: #333; margin-bottom: 0.5rem; font-size: 1.2rem;"></h3>
+    <p id="progress-status-text" style="color: #666; font-size: 0.95rem; margin-bottom: 1rem;"></p>
+    
+    <!-- Progress Bar -->
+    <div style="width: 100%; background: #e0e0e0; border-radius: 4px; height: 8px; overflow: hidden; margin-top: 1rem;">
+      <div id="upload-progress-bar" style="width: 0%; height: 100%; background: #ED1A3B; transition: width 0.2s ease;"></div>
+    </div>
+    <span id="progress-percentage" style="font-size: 0.85rem; color: #888; margin-top: 0.5px; display: block;">0%</span>
+  </div>
+</div>
+
+<style>
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+</style>
+
+<style>
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+</style>
 </body>
 </html>

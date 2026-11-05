@@ -74,7 +74,7 @@ Hakurikijwe ibiteganywa na Politiki yo gutanga amakuru ku byaha, ku bikorwa cyan
         <ol>
             <li>Izina</li>
             <li>Aderesi ya Email</li>
-            <li>Numero ya Telefone</li>
+            <li>nimero ya Telefone</li>
         </ol>
         <p>Ifishi irimo n’ibibazo bitafatwa nk’amakuru y’ibanga, ariko nayo irabungabungwa kimwe n’ayandi.</p>
         <p>Niba utanze andi makuru mu gice cy’inyandiko cyangwa ahandi hateganyijwe, nayo azakusanywa akoreshwe.</p>
@@ -128,13 +128,13 @@ Hakurikijwe ibiteganywa na Politiki yo gutanga amakuru ku byaha, ku bikorwa cyan
         'submitreport' => 'Ohereza',
         'thankyou' => 'Murakoze',
         'thankyouforreport' => 'Murakoze Gutanga Amakuru',
-        'thankyoumessagesuccess' => 'Raporo yawe yo gutangaza amakuru yatanzwe neza. Hasi numero yawe yihariye yo kwifashisha:',
-        'casenumbertext' => 'Numero Yihariye ya Dosiye',
+        'thankyoumessagesuccess' => 'Raporo yawe yo gutangaza amakuru yatanzwe neza. Hasi nimero yawe yihariye yo kwifashisha:',
+        'casenumbertext' => 'nimero Yihariye ya Dosiye',
         'wouldyouliketosendreport' => 'Urifuza kwakira kopi ya Raporo Yawe?',
         'enteremail' => 'Shiramo Imeri yawe',
         'sendreceipt' => 'Ohereza Kopi',
         'sendreceiptno' => 'Oya, Ndanyuzwe',
-        'emailreceiptdisclaimer' => 'Imeri iraba ikubiyemo amakuru watanze hamwe numero ya dosiye.',
+        'emailreceiptdisclaimer' => 'Imeri iraba ikubiyemo amakuru watanze hamwe nimero ya dosiye.',
         'receiptsuccessmessage' => 'Byakunze: Murimurirwa ku yindi Paji mu masegonda 5........Dosiye yoherejwe neza kuri',
         'export_system_name' => 'Sisitemu banga yo Gutanga Amakuru',
         'export_submitted_at' => 'Byatanzwe',
@@ -147,6 +147,11 @@ Hakurikijwe ibiteganywa na Politiki yo gutanga amakuru ku byaha, ku bikorwa cyan
         'Dear' => 'Muraho',
         'email_pfa_assistance' =>'<p>Twometseho kopi ya dosiye yawe.</p><p>Niba ufite ibibazo cyangwa ukeneye ubufasha bwisumbuyeho, twandikire.</p>',
         'email_best_regards' => 'Murakoze',
+        'submitting_title' => 'Kohereza Raporo Yawe',
+        'submitting_text' => 'Tegereza mu gihe twohereza raporo yawe...',
+        'processing_text' => 'Turi gutunganya raporo no kuguha nimero yayo...',
+        'network_error' => 'Ikibazo cya interineti. Nyamuneka genzura mu muyoboro wawe wongere ugerageze.',
+        'submit_error' => 'Habaye ikibazo mu kohereza raporo yawe. Nyamuneka wongere ugerageze.',
 
     ],
 // English Translation
@@ -287,6 +292,11 @@ In line with the Whistleblowing Policy, Bank of Kigali guarantees protection for
         'Dear' => 'Hello',
         'email_pfa_assistance' =>'<p>We have attached a copy of your case receipt for your reference.</p><p>Should you have any questions or need further assistance, feel free to contact us.</p>',
         'email_best_regards' => 'Best Regards',
+        'submitting_title' => 'Submitting Your Report',
+        'submitting_text' => 'Please wait while we securely upload your files and record your case...',
+        'processing_text' => 'Processing report and generating reference...',
+        'network_error' => 'Network error. Please check your connection and try again.',
+        'submit_error' => 'An error occurred while submitting your report. Please try again.',
 
     ],
     //French Translation
@@ -397,7 +407,7 @@ Conformément à la Politique de Lancement d’Alerte, la Banque de Kigali garan
     "submitreport" => "Soumettre le rapport",
     "thankyou" => "Merci",
     "thankyouforreport" => "Merci pour votre rapport",
-    "thankyoumessagesuccess" => "Votre rapport a ete soumis avec succes. Voici votre numero de dossier unique :",
+    "thankyoumessagesuccess" => "Votre rapport a ete soumis avec succes. Voici votre nimero de dossier unique :",
     "casenumbertext" => "Numéro de dossier",
     "wouldyouliketosendreport" => "Souhaitez-vous recevoir une copie de votre rapport ?",
     "enteremail" => "Entrez votre adresse e-mail :",
@@ -416,6 +426,11 @@ Conformément à la Politique de Lancement d’Alerte, la Banque de Kigali garan
     "Dear" => "Bonjour",
     "email_pfa_assistance" => "<p>Nous avons joint une copie de votre dossier pour reference.</p><p>Si vous avez des questions ou besoin d'aide, n'hesitez pas a nous contacter.</p>",
     "email_best_regards" => "Cordialement",
+    'submitting_title' => 'Soumission de votre rapport',
+    'submitting_text' => 'Veuillez patienter pendant que nous preparons votre rapport...',
+    'processing_text' => 'Traitement du rapport et génération de la référence...',
+    'network_error' => 'Erreur réseau. Veuillez vérifier votre connexion et réessayer.',
+    'submit_error' => 'Une erreur est survenue lors de la soumission. Veuillez réessayer.',
 ],
 //Kiswahili Version
 'sw' => [
@@ -557,6 +572,11 @@ Kwa mujibu wa Sera ya Utoaji Taarifa, Benki ya Kigali inahakikisha ulinzi kwa mt
 'Dear' => 'Habari',
 'email_pfa_assistance' =>'<p>Tumeambatisha nakala ya risiti ya kesi yako kwa kumbukumbu yako.</p><p>Ikiwa una maswali au unahitaji msaada zaidi, tafadhali wasiliana nasi.</p>',
 'email_best_regards' => 'Wako kwa dhati',
+'submitting_title' => 'Inawasilisha Ripoti Yako',
+'submitting_text' => 'Tafadhali subiri wakati tunapakia faili zako kwa usalama na kurekodi kesi yako...',
+'processing_text' => 'Inachakata ripoti na kutengeneza rejeleo...',
+'network_error' => 'Hitilafu ya mtandao. Tafadhali angalia muunganisho wako na ujaribu tena.',
+'submit_error' => 'Hitilafu imetokea wakati wa kuwasilisha ripoti yako. Tafadhali jaribu tena.',
 ],
 
 ];
