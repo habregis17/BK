@@ -191,38 +191,44 @@ $trendRaw = $trendStmt->fetchAll(PDO::FETCH_KEY_PAIR);
   <div class="analytics-grid">
     
     <!-- MODULE: Cases by Channel (Tabular + Icons + Percentages) -->
-    <div class="analytics-card">
-      <h4><span><i class="fa-solid fa-tower-broadcast" style="margin-right: 8px; color: #E81A3B;"></i> Cases by Channel</span></h4>
-      <div style="margin-top: 15px;">
-        <?php if (empty($channelData)): ?>
-          <p class="muted" style="text-align:center; padding:15px;">No channel data available.</p>
-        <?php else: ?>
-          <?php foreach ($channelData as $ch): 
-            $count = (int)$ch['total'];
-            $pct = round(($count / $safeTotal) * 100, 1);
-            
-            // Smart Icon mapping based on channel name
-            $channelNameLower = strtolower($ch['channel'] ?? 'website');
-            $iconClass = 'fa-globe';
-            if (str_contains($channelNameLower, 'whatsapp')) $iconClass = 'fa fa-whatsapp';
-            elseif (str_contains($channelNameLower, 'email')) $iconClass = 'fa-envelope';
-            elseif (str_contains($channelNameLower, 'call center') || str_contains($channelNameLower, 'call center')) $iconClass = 'fa-phone';
-            elseif (str_contains($channelNameLower, 'website')) $iconClass = 'fa-laptop-code';
-            elseif (str_contains($channelNameLower, 'sms')) $iconClass = 'fa-solid fa-sms';
-          ?>
-            <div class="breakdown-row">
-              <div class="breakdown-info">
-                <span><i class="fa-solid <?= $iconClass ?>"></i> <?= htmlspecialchars($ch['channel'] ?: 'website') ?></span>
-                <span><strong><?= $count ?></strong> <span style="color:#777; font-weight:normal;">(<?= $pct ?>%)</span></span>
-              </div>
-              <div class="progress-track">
-                <div class="progress-bar-fill" style="width: <?= $pct ?>%; background: #008fd2;"></div>
-              </div>
-            </div>
-          <?php endforeach; ?>
-        <?php endif; ?>
+   <div class="analytics-card">
+  <h4><span><i class="fa-solid fa-tower-broadcast" style="color: #E81A3B; margin-right: 8px;"></i> Cases by Channel</span></h4>
+  <div style="margin-top: 15px;">
+    
+    <?php if ($channelDbError): ?>
+      <!-- Display exact SQL error if column name is wrong -->
+      <div style="background: #f8d7da; color: #721c24; padding: 10px; border-radius: 4px; font-size: 0.85rem;">
+        <strong>SQL Error:</strong> <?= htmlspecialchars($channelDbError) ?><br>
+        <em>Tip: Your live database might use a different column name instead of 'channel' (e.g., 'intake_channel' or 'submission_channel').</em>
       </div>
-    </div>
+    <?php elseif (empty($channelData)): ?>
+      <p class="muted" style="text-align:center; padding:15px; color:#999;">No channel data found for this period.</p>
+    <?php else: ?>
+      <?php foreach ($channelData as $ch): 
+        $count = (int)$ch['total'];
+        $pct = $safeTotal > 0 ? round(($count / $safeTotal) * 100, 1) : 0;
+        
+        $channelNameLower = strtolower($ch['channel'] ?? '');
+        $iconClass = 'fa-globe';
+        if (str_contains($channelNameLower, 'ussd')) $iconClass = 'fa-mobile-screen-button';
+        elseif (str_contains($channelNameLower, 'email')) $iconClass = 'fa-envelope';
+        elseif (str_contains($channelNameLower, 'phone') || str_contains($channelNameLower, 'call')) $iconClass = 'fa-phone-volume';
+        elseif (str_contains($channelNameLower, 'web')) $iconClass = 'fa-laptop-code';
+      ?>
+        <div class="breakdown-row" style="margin-bottom: 12px;">
+          <div class="breakdown-info" style="display: flex; justify-content: space-between; font-size: 0.9rem; font-weight: 600; margin-bottom: 4px;">
+            <span><i class="fa-solid <?= $iconClass ?>" style="color:#E81A3B; width:20px;"></i> <?= htmlspecialchars($ch['channel'] ?: 'Web Portal') ?></span>
+            <span><strong><?= $count ?></strong> <span style="color:#777; font-weight:normal;">(<?= $pct ?>%)</span></span>
+          </div>
+          <div class="progress-track" style="background: #e9ecef; border-radius: 10px; height: 8px; width: 100%; overflow: hidden;">
+            <div class="progress-bar-fill" style="width: <?= $pct ?>%; height: 100%; background: #008fd2; border-radius: 10px;"></div>
+          </div>
+        </div>
+      <?php endforeach; ?>
+    <?php endif; ?>
+
+  </div>
+</div>
 
     <!-- MODULE: Cases by Relevance (Tabular + Icons + Percentages) -->
     <div class="analytics-card">
