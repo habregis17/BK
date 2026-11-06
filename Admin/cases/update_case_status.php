@@ -176,7 +176,6 @@ if ($relevance === 'Core Banking Operation Issue' && $newStatus === 'Closed') {
         // ------------------ 2. BUILD ERP PARSER BODY & HEADERS ------------------
         $partnerEmail = "bk@bk.rw"; // Replace with your actual partner/ERP address
         $subject = "BDO WHISTLEBLOWING SYSTEM - CORE BANKING OPERATION ISSUE - ESCALATION";
-
         $boundary = md5(time());
         $headers  = "From: BDO WHISTLEBLOWING SYSTEM - BANK OF KIGALI PLC <alert.rw@bdo-ea.com>\r\n";
         $headers .= "Reply-To: alert.rw@bdo-ea.com\r\n";
@@ -423,6 +422,21 @@ try {
     $pdo->rollBack();
     $_SESSION['error'] = 'Database error occurred: ' . $e->getMessage();
 }
+// Check if request came via JavaScript Fetch (AJAX)
+$isAjax = !empty($_POST['is_ajax']) || strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest';
 
+if ($isAjax) {
+    header('Content-Type: application/json');
+    if (isset($_SESSION['error'])) {
+        echo json_encode(['success' => false, 'error' => $_SESSION['error']]);
+        unset($_SESSION['error']);
+    } else {
+        echo json_encode(['success' => true, 'message' => $_SESSION['success'] ?? 'Updated successfully']);
+        unset($_SESSION['success']);
+    }
+    exit;
+}
+
+// Fallback normal redirect for standard submissions
 header("Location: view.php?casenumber=$caseId");
 exit;

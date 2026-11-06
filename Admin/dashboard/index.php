@@ -1,263 +1,360 @@
 <?php
 require '../auth/auth_check.php';
-$pageTitle = 'Dashboard';
+$pageTitle = 'Whistleblower Case Insights & Analytics';
 require '../includes/header.php';
 require '../includes/sidebar.php';
-
 require '../../config/db.php';
 
-$stats = [];
+// --- 1. FILTER LOGIC (Dates & Quarters) ---
+$dateFrom = $_GET['date_from'] ?? '';
+$dateTo   = $_GET['date_to']   ?? '';
+$quarter  = $_GET['quarter']   ?? '';
 
-$stats['total_cases'] = $pdo->query(
-    "SELECT COUNT(*) FROM cases"
-)->fetchColumn();
+if (!empty($quarter)) {
+    $currentYear = date('Y');
+    switch ($quarter) {
+        case 'Q1': $dateFrom = "$currentYear-01-01"; $dateTo = "$currentYear-03-31"; break;
+        case 'Q2': $dateFrom = "$currentYear-04-01"; $dateTo = "$currentYear-06-30"; break;
+        case 'Q3': $dateFrom = "$currentYear-07-01"; $dateTo = "$currentYear-09-30"; break;
+        case 'Q4': $dateFrom = "$currentYear-10-01"; $dateTo = "$currentYear-12-31"; break;
+        case 'YTD': $dateFrom = "$currentYear-01-01"; $dateTo = date('Y-m-d'); break;
+    }
+}
 
-$stats['pending_cases'] = $pdo->query(
-    "SELECT COUNT(*) FROM cases WHERE status='Pending'"
-)->fetchColumn();
+$whereClauses = [];
+$params = [];
 
-$stats['in_progress_cases'] = $pdo->query(
-    "SELECT COUNT(*) FROM cases WHERE status='new'"
-)->fetchColumn();
+if (!empty($dateFrom)) {
+    $whereClauses[] = "DATE(submitted_at) >= :date_from";
+    $params[':date_from'] = $dateFrom;
+}
+if (!empty($dateTo)) {
+    $whereClauses[] = "DATE(submitted_at) <= :date_to";
+    $params[':date_to'] = $dateTo;
+}
 
-$stats['closed_cases'] = $pdo->query(
-    "SELECT COUNT(*) FROM cases WHERE status='Closed'"
-)->fetchColumn();
+$whereSql = !empty($whereClauses) ? " WHERE " . implode(" AND ", $whereClauses) : "";
 
-$stats['low_sensitivity'] = $pdo->query(
-    "SELECT COUNT(*) FROM cases WHERE Case_sensitivity = 'Low'"
-)->fetchColumn();
+// --- 2. STATS & ANALYTICS QUERIES ---
 
-$stats['medium_sensitivity'] = $pdo->query(
-    "SELECT COUNT(*) FROM cases WHERE Case_sensitivity = 'Medium'"
-)->fetchColumn();
+// Total Cases for Percentage Calculations
+$totalCasesStmt = $pdo->prepare("SELECT COUNT(*) FROM cases $whereSql");
+$totalCasesStmt->execute($params);
+$totalCases = (int)$totalCasesStmt->fetchColumn();
+$safeTotal = $totalCases > 0 ? $totalCases : 1; // Prevent division by zero
 
-$stats['high_sensitivity'] = $pdo->query(
-    "SELECT COUNT(*) FROM cases WHERE Case_sensitivity = 'High'"
-)->fetchColumn();
+// Status Breakdown
+$statusStmt = $pdo->prepare("SELECT status, COUNT(*) as cnt FROM cases $whereSql GROUP BY status");
+$statusStmt->execute($params);
+$statusRaw = $statusStmt->fetchAll(PDO::FETCH_KEY_PAIR);
 
-$stats['critical_sensitivity'] = $pdo->query(
-    "SELECT COUNT(*) FROM cases WHERE Case_sensitivity = 'Critical'"
-)->fetchColumn();
-$stats['relevant_cases'] = $pdo->query(
-    "SELECT COUNT(*) FROM cases WHERE Case_relevance = 'Relevant'"
-)->fetchColumn();
+$stats['pending_cases'] = (int)($statusRaw['Pending'] ?? 0);
+$stats['new_cases']     = (int)($statusRaw['new'] ?? $statusRaw['New'] ?? 0);
+$stats['closed_cases']  = (int)($statusRaw['Closed'] ?? 0);
 
-$stats['irrelevant_cases'] = $pdo->query(
-    "SELECT COUNT(*) FROM cases WHERE Case_relevance = 'Irrelevant'"
-)->fetchColumn();
+// Channel Breakdown
+$channelStmt = $pdo->prepare("SELECT channel, COUNT(*) as total FROM cases $whereSql GROUP BY channel ORDER BY total DESC");
+$channelStmt->execute($params);
+$channelData = $channelStmt->fetchAll(PDO::FETCH_ASSOC);
 
-$stats['core_banking_cases'] = $pdo->query(
-    "SELECT COUNT(*) FROM cases WHERE Case_relevance = 'Core Banking'"
-)->fetchColumn();
+// Relevance Breakdown
+$relevanceStmt = $pdo->prepare("SELECT Case_relevance, COUNT(*) as total FROM cases $whereSql GROUP BY Case_relevance ORDER BY total DESC");
+$relevanceStmt->execute($params);
+$relevanceData = $relevanceStmt->fetchAll(PDO::FETCH_ASSOC);
 
-
-$stats['total_clients'] = $pdo->query(
-    "SELECT COUNT(*) FROM clients"
-)->fetchColumn();
-
-$stats['total_users'] = $pdo->query(
-    "SELECT COUNT(*) FROM admin_users"
-)->fetchColumn();
-
-// Trends
-//Trend: cases created per day (last 30 days)
-$trendStmt = $pdo->prepare("
-  SELECT 
-    DATE(submitted_at) AS day,
-    COUNT(*) AS total
-  FROM cases
-  WHERE submitted_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-  GROUP BY DATE(submitted_at)
-  ORDER BY day ASC
+// Module 1: Rerouted Cases (Sent to Partner)
+$reroutedWhere = !empty($whereSql) ? "$whereSql AND sent_to_partner = 'yes'" : " WHERE sent_to_partner = 'yes'";
+$reroutedStmt = $pdo->prepare("
+    SELECT *
+    FROM cases 
+    $reroutedWhere 
+    ORDER BY submitted_at DESC
 ");
-$trendStmt->execute();
-$trendRaw = $trendStmt->fetchAll(PDO::FETCH_ASSOC);
+$reroutedStmt->execute($params);
+$reroutedCases = $reroutedStmt->fetchAll(PDO::FETCH_ASSOC);
+$stats['rerouted_count'] = count($reroutedCases);
 
-// ✅ Build full date range (last 30 days)
-$trendData = [];
-for ($i = 29; $i >= 0; $i--) {
-    $date = date('Y-m-d', strtotime("-$i days"));
-    $trendData[$date] = 0;
-}
-
-// ✅ Fill actual data
-foreach ($trendRaw as $row) {
-    $trendData[$row['day']] = (int)$row['total'];
-}
-
-// ✅ Separate labels & values (for Chart.js)
-$trendLabels = array_keys($trendData);
-$trendValues = array_values($trendData);
-
-
-
+// Trend: Daily Submissions
+$trendStmt = $pdo->prepare("
+    SELECT DATE(submitted_at) AS day, COUNT(*) AS total 
+    FROM cases 
+    $whereSql 
+    GROUP BY DATE(submitted_at) 
+    ORDER BY day ASC
+");
+$trendStmt->execute($params);
+$trendRaw = $trendStmt->fetchAll(PDO::FETCH_KEY_PAIR);
 ?>
 
-<h1>Dashboard</h1>
-<p class="muted">Overview of system activity</p>
+<!-- FontAwesome & Chart.js & html2pdf -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-<div class="stats-grid">
-  <div class="stat-card">
-    <span class="label">Total Cases</span>
-    <span class="value"><?= $stats['total_cases'] ?></span>
+<style>
+  .dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; color: #E81A3B; }
+  .dashboard-header h1 { font-size: 2rem; margin: 0;color: #E81A3B; }
+  .filter-bar { background: #f8f9fa; padding: 15px 20px; border-radius: 8px; border: 1px solid #e3e6f0; margin-bottom: 25px; }
+  .filter-form { display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; }
+  .filter-group { display: flex; flex-direction: column; gap: 5px; }
+  .filter-group label { font-size: 0.85rem; font-weight: 600; color: #5b6e7f; }
+  .filter-group input, .filter-group select { padding: 7px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; }
+  .btn-filter { background: #333; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600; }
+  .btn-export { background: #E81A3B; color: #fff; border: none; padding: 10px 18px; border-radius: 4px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; }
+  
+  .analytics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 25px; }
+  .analytics-card { background: #fff; border-radius: 8px; padding: 20px; border: 1px solid #e3e6f0; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+  .analytics-card.full-width { grid-column: span 3; }
+  .analytics-card h4 { margin-top: 0; color: #333; font-size: 1rem; border-bottom: 2px solid #f0f0f0; padding-bottom: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+  
+  /* Progress & Table Design Elements */
+  .breakdown-row { margin-bottom: 15px; }
+  .breakdown-info { display: flex; justify-content: space-between; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 5px; align-items: center; }
+  .breakdown-info i { color: #E81A3B; width: 20px; text-align: center; margin-right: 8px; }
+  .progress-track { background: #e9ecef; border-radius: 10px; height: 10px; width: 100%; overflow: hidden; }
+  .progress-bar-fill { height: 100%; border-radius: 10px; transition: width 0.4s ease; }
+  
+  .data-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 0.9rem; }
+  .data-table th, .data-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee; }
+  .data-table th { background: #f8f9fa; color: #5b6e7f; font-weight: 600; }
+  .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+  .badge-danger { background: #f8d7da; color: #721c24; }
+  .badge-success { background: #d4edda; color: #155724; }
+</style>
+
+<div id="dashboardReport">
+  <div class="dashboard-header">
+    <div>
+      <h1 style="margin:0; color:#333;">Bank of Kigali Plc Case Analytics Hub</h1>
+      <!-- <p class="muted" style="margin:5px 0 0 0;">Executive metrics, channel distribution, and partner escalation records</p> -->
+    </div>
+    <!-- <button class="btn-export" onclick="exportPDF()">
+      <i class="fa-solid fa-file-pdf"></i> Export Report PDF
+    </button> -->
   </div>
- 
-  <a href="../cases/index.php?search=&date_from=&date_to=&status=Pending&sensitivity=&identity_choice=" class="dashboard-card-link">
+
+  <!-- GLOBAL FILTER BAR -->
+  <div class="filter-bar">
+    <form method="GET" action="" class="filter-form">
+      <div class="filter-group">
+        <label>Date From</label>
+        <input type="date" name="date_from" value="<?= htmlspecialchars($dateFrom) ?>">
+      </div>
+      <div class="filter-group">
+        <label>Date To</label>
+        <input type="date" name="date_to" value="<?= htmlspecialchars($dateTo) ?>">
+      </div>
+      <div class="filter-group">
+        <label>Quarter Preset</label>
+        <select name="quarter" onchange="this.form.submit()">
+          <option value="">-- Select Period --</option>
+          <option value="Q1" <?= $quarter === 'Q1' ? 'selected' : '' ?>>Q1 (Jan - Mar)</option>
+          <option value="Q2" <?= $quarter === 'Q2' ? 'selected' : '' ?>>Q2 (Apr - Jun)</option>
+          <option value="Q3" <?= $quarter === 'Q3' ? 'selected' : '' ?>>Q3 (Jul - Sep)</option>
+          <option value="Q4" <?= $quarter === 'Q4' ? 'selected' : '' ?>>Q4 (Oct - Dec)</option>
+          <option value="YTD" <?= $quarter === 'YTD' ? 'selected' : '' ?>>Year to Date</option>
+        </select>
+      </div>
+      <button type="submit" class="btn-filter">Apply Filter</button>
+      <a href="dashboard.php" style="padding: 8px 12px; color: #666; text-decoration: none; font-size: 0.9rem;">Reset</a>
+    </form>
+  </div>
+
+  <!-- KPI SUMMARY CARDS -->
+  <div class="stats-grid" style="margin-bottom:25px;">
+    <div class="stat-card">
+      <span class="label">Total Cases Received</span>
+      <span class="value"><?= $totalCases ?></span>
+    </div>
     <div class="stat-card warning">
-      <span class="label">Pending Cases</span>
+      <span class="label">Pending Action</span>
       <span class="value"><?= $stats['pending_cases'] ?></span>
     </div>
-  </a>
-  <a href="../cases/index.php?search=&date_from=&date_to=&status=New&sensitivity=&identity_choice=" class="dashboard-card-link">
     <div class="stat-card info">
-      <span class="label">New</span>
-      <span class="value"><?= $stats['in_progress_cases'] ?></span>
+      <span class="label">New Submissions</span>
+      <span class="value"><?= $stats['new_cases'] ?></span>
     </div>
-  </a>
-  
-  <a href="../cases/index.php?search=&date_from=&date_to=&status=Closed&sensitivity=&identity_choice=" class="dashboard-card-link">
     <div class="stat-card success">
       <span class="label">Closed Cases</span>
       <span class="value"><?= $stats['closed_cases'] ?></span>
     </div>
-  </a>
-<!--  -->
-  <!-- <div class="stat-card">
-    <span class="label">Clients</span>
-    <span class="value"><?= $stats['total_clients'] ?></span>
-  </div> -->
+  </div>
 
-  <!-- <div class="stat-card">
-    <span class="label">Admin Users</span>
-    <span class="value"><?= $stats['total_users'] ?></span>
-  </div> -->
+  <!-- DESIGN-FOCUSED TABULAR & PERCENTAGE BREAKDOWN MODULES -->
+  <div class="analytics-grid">
+    
+    <!-- MODULE: Cases by Channel (Tabular + Icons + Percentages) -->
+    <div class="analytics-card">
+      <h4><span><i class="fa-solid fa-tower-broadcast"></i> Cases by Channel</span></h4>
+      <div style="margin-top: 15px;">
+        <?php if (empty($channelData)): ?>
+          <p class="muted" style="text-align:center; padding:15px;">No channel data available.</p>
+        <?php else: ?>
+          <?php foreach ($channelData as $ch): 
+            $count = (int)$ch['total'];
+            $pct = round(($count / $safeTotal) * 100, 1);
+            
+            // Smart Icon mapping based on channel name
+            $channelNameLower = strtolower($ch['channel'] ?? 'website');
+            $iconClass = 'fa-globe';
+            if (str_contains($channelNameLower, 'whatsapp')) $iconClass = 'fa fa-whatsapp';
+            elseif (str_contains($channelNameLower, 'email')) $iconClass = 'fa-envelope';
+            elseif (str_contains($channelNameLower, 'call center') || str_contains($channelNameLower, 'call center')) $iconClass = 'fa-phone';
+            elseif (str_contains($channelNameLower, 'website')) $iconClass = 'fa-laptop-code';
+            elseif (str_contains($channelNameLower, 'sms')) $iconClass = 'fa-solid fa-sms';
+          ?>
+            <div class="breakdown-row">
+              <div class="breakdown-info">
+                <span><i class="fa-solid <?= $iconClass ?>"></i> <?= htmlspecialchars($ch['channel'] ?: 'website') ?></span>
+                <span><strong><?= $count ?></strong> <span style="color:#777; font-weight:normal;">(<?= $pct ?>%)</span></span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-bar-fill" style="width: <?= $pct ?>%; background: #008fd2;"></div>
+              </div>
+            </div>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </div>
+    </div>
+
+    <!-- MODULE: Cases by Relevance (Tabular + Icons + Percentages) -->
+    <div class="analytics-card">
+      <h4><span><i class="fa-solid fa-filter-circle-check"></i> Cases by Relevance</span></h4>
+      <div style="margin-top: 15px;">
+        <?php if (empty($relevanceData)): ?>
+          <p class="muted" style="text-align:center; padding:15px;">No relevance data available.</p>
+        <?php else: ?>
+          <?php foreach ($relevanceData as $rel): 
+            $count = (int)$rel['total'];
+            $pct = round(($count / $safeTotal) * 100, 1);
+            $relName = $rel['Case_relevance'] ?: 'Unassigned';
+            
+            $relIcon = 'fa-file-lines';
+            $barColor = '#5b6e7f';
+            if (str_contains(strtolower($relName), 'relevant')) { $relIcon = 'fa-circle-check'; $barColor = '#009966'; }
+            elseif (str_contains(strtolower($relName), 'core')) { $relIcon = 'fa-building-columns'; $barColor = '#008fd2'; }
+            elseif (str_contains(strtolower($relName), 'irrelevant')) { $relIcon = 'fa-circle-xmark'; $barColor = '#98002e'; }
+          ?>
+            <div class="breakdown-row">
+              <div class="breakdown-info">
+                <span><i class="fa-solid <?= $relIcon ?>"></i> <?= htmlspecialchars($relName) ?></span>
+                <span><strong><?= $count ?></strong> <span style="color:#777; font-weight:normal;">(<?= $pct ?>%)</span></span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-bar-fill" style="width: <?= $pct ?>%; background: <?= $barColor ?>;"></div>
+              </div>
+            </div>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </div>
+    </div>
+
+    <!-- MODULE: Cases by Status (Tabular + Icons + Percentages) -->
+    <div class="analytics-card">
+      <h4><span><i class="fa-solid fa-chart-pie"></i> Cases by Status</span></h4>
+      <div style="margin-top: 15px;">
+        <?php 
+        $statuses = [
+            ['name' => 'Pending', 'count' => $stats['pending_cases'], 'icon' => 'fa-clock', 'color' => '#D76900'],
+            ['name' => 'New', 'count' => $stats['new_cases'], 'icon' => 'fa-bell', 'color' => '#008fd2'],
+            ['name' => 'Closed', 'count' => $stats['closed_cases'], 'icon' => 'fa-square-check', 'color' => '#009966']
+        ];
+        foreach ($statuses as $st):
+            $pct = round(($st['count'] / $safeTotal) * 100, 1);
+        ?>
+          <div class="breakdown-row">
+            <div class="breakdown-info">
+              <span><i class="fa-solid <?= $st['icon'] ?>" style="color: <?= $st['color'] ?>;"></i> <?= $st['name'] ?></span>
+              <span><strong><?= $st['count'] ?></strong> <span style="color:#777; font-weight:normal;">(<?= $pct ?>%)</span></span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-bar-fill" style="width: <?= $pct ?>%; background: <?= $st['color'] ?>;"></div>
+            </div>
+          </div>
+        <?php endforeach; ?>
+      </div>
+    </div>
+
+    <!-- SUBMISSION TREND LINE CHART (Kept for visual flow) -->
+    <div class="analytics-card full-width">
+      <h4><span><i class="fa-solid fa-chart-line"></i> Submission Volume Trend</span></h4>
+      <canvas id="casesTrendChart" style="max-height: 220px;"></canvas>
+    </div>
+  </div>
+
+  <!-- MODULE 1: REROUTED CASES (SENT TO PARTNER) -->
+  <div class="analytics-card full-width" style="margin-bottom:30px;">
+    <h4>
+      <span><i class="fa-solid fa-share-nodes"></i> Cases Rerouted (Sent to Partner)</span>
+      <span class="badge badge-danger"><?= $stats['rerouted_count'] ?> Total Escalated</span>
+    </h4>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Case Ref #</th>
+            <th>Submission Date</th>
+            <th>Updated By</th>
+            <th>Relevance Resolution Note</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php if (empty($reroutedCases)): ?>
+            <tr><td colspan="6" style="text-align:center; color:#999; padding:20px;">No rerouted cases found for this selected period.</td></tr>
+          <?php else: ?>
+            <?php foreach ($reroutedCases as $case): ?>
+              <tr>
+                <td><strong><?= htmlspecialchars($case['casenumber']) ?></strong></td>
+                <td><?= date('Y-m-d H:i', strtotime($case['submitted_at'])) ?></td>
+                <td><?= htmlspecialchars($case['updated_by'] ?? 'System Admin') ?></td>
+                <td><?= htmlspecialchars('Case identified as Core Banking Operation Issue and routed to BK Support Team') ?></td>
+                <td><span class="badge badge-success"><?= htmlspecialchars($case['status']) ?></span></td>
+                <td><a href="../cases/view.php?casenumber=<?= urlencode($case['casenumber']) ?>" style="color:#E81A3B; font-weight:600;"><i class="fa-solid fa-arrow-up-right-from-square"></i> View</a></td>
+              </tr>
+            <?php endforeach; ?>
+          <?php endif; ?>
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
-<div class="dashboard-charts">
-
-  <div class="chart-card">
-    <h4>Cases by Status</h4>
-    <canvas id="statusChart"></canvas>
-  </div>
-
-  <div class="chart-card">
-    <h4>Cases by Sensitivity</h4>
-    <canvas id="sensitivityChart"></canvas>
-  </div>
-
-  <div class="chart-card">
-    <h4>Cases by Relevance</h4>
-    <canvas id="relevanceChart"></canvas>
-  </div>
-
-  <div class="chart-card full-width">
-    <h4>Cases Trend – Last 30 Days</h4>
-    <canvas id="casesTrendChart"></canvas>
-  </div>
-
-</div>
-<?php INCLUDE '../includes/footer.php'; ?>
+<?php include '../includes/footer.php'; ?>
 
 <script>
-new Chart(document.getElementById('statusChart'), {
-  type: 'doughnut',
-  data: {
-    labels: ['Pending', 'Closed', 'New'],
-    datasets: [{
-      data: [<?= $stats['pending_cases'] ?>, <?= $stats['closed_cases'] ?>, <?= $stats['in_progress_cases'] ?>],
-      backgroundColor: ['#D76900', '#009966', '#008fd2']
-    }]
-  },
-  options: {
-    plugins: {
-      legend: { position: 'bottom' }
-    }
-  }
-});
-</script>
-<script>
-new Chart(document.getElementById('sensitivityChart'), {
-  type: 'bar',
-  data: {
-    labels: ['Low', 'Medium', 'High'],
-    datasets: [{
-      label: 'Cases',
-      data: [
-        <?= $stats['low_sensitivity'] ?>,
-        <?= $stats['medium_sensitivity'] ?>,
-        <?= $stats['high_sensitivity'] ?>
-      ],
-      backgroundColor: ['#5b6e7f', '#D76900', '#98002e']
-    }]
-  },
-  options: {
-    scales: {
-      y: { beginAtZero: true }
-    }
-  }
-});
-</script>
-<script>
-new Chart(document.getElementById('relevanceChart'), {
-  type: 'pie',
-  data: {
-    labels: ['Relevant', 'Irrelevant', 'Core Banking Issues'],
-    datasets: [{
-      data: [
-        <?= $stats['relevant_cases'] ?>,
-        <?= $stats['irrelevant_cases'] ?>,
-        <?= $stats['core_banking_cases'] ?>
-      ],
-      backgroundColor: ['#008fd2', '#E7E7E7', '#5b6e7f']
-    }]
-  },
-  options: {
-    plugins: {
-      legend: { position: 'bottom' }
-    }
-  }
-});
-</script>
-<script>
-const trendCtx = document.getElementById('casesTrendChart');
-
-new Chart(trendCtx, {
+// Submission Trend Line Chart
+new Chart(document.getElementById('casesTrendChart'), {
   type: 'line',
   data: {
-    labels: <?= json_encode($trendLabels) ?>,
+    labels: <?= json_encode(array_keys($trendRaw)) ?>,
     datasets: [{
       label: 'Cases Submitted',
-      data: <?= json_encode($trendValues) ?>,
-      borderColor: '#E81A3B',        // Brand red
-      backgroundColor: 'rgba(232,26,59,0.1)',
-      borderWidth: 2,
-      tension: 0.3,
+      data: <?= json_encode(array_values($trendRaw)) ?>,
+      borderColor: '#E81A3B',
+      backgroundColor: 'rgba(232, 26, 59, 0.08)',
       fill: true,
-      pointRadius: 3,
-      pointHoverRadius: 6,
+      tension: 0.3
     }]
   },
   options: {
     responsive: true,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: ctx => ctx.parsed.y + ' cases'
-        }
-      }
-    },
-    scales: {
-      x: {
-        ticks: { maxRotation: 0 },
-        grid: { display: false }
-      },
-      y: {
-        beginAtZero: true,
-        grid: { color: '#E7E7E7' }
-      }
-    }
+    scales: { y: { beginAtZero: true } },
+    plugins: { legend: { display: false } }
   }
 });
+
+// PDF EXPORT FUNCTION
+function exportPDF() {
+  const element = document.getElementById('dashboardReport');
+  const opt = {
+    margin:       [0.3, 0.3, 0.3, 0.3],
+    filename:     'WB_Executive_Insights_Report.pdf',
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2 },
+    jsPDF:        { unit: 'in', format: 'letter', orientation: 'landscape' }
+  };
+  html2pdf().set(opt).from(element).save();
+}
 </script>

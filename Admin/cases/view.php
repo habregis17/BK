@@ -386,7 +386,7 @@ if (is_array($files) && count($files) > 0): ?>
   </div>
 <?php endif; ?>
   
-  <form method="POST" action="update_case_status.php">
+  <form method="POST" action="update_case_status.php" id="caseUpdateForm">
     <input type="hidden" name="case_id" value="<?= $case['casenumber'] ?>">
 
     <label>Status</label>
@@ -413,7 +413,7 @@ if (is_array($files) && count($files) > 0): ?>
 
     <div id="closure-comment" style="display:none;">
       <label>Closure Comment (Required)</label>
-      <textarea name="closure_comment" <?= $isClosed ? 'readonly' : '' ?>><?= $closureComment ?></textarea>
+      <textarea name="closure_comment" id="closure_comment" <?= $isClosed ? 'readonly' : '' ?>><?= $closureComment ?></textarea>
     </div>
 
 <?php if (!$isClosed): ?>
@@ -539,6 +539,126 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     });
   }
+});
+
+</script>
+<!-- predefine Comment on Core banking issue -->
+ <script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Replace these IDs with the actual IDs of your dropdown and textarea in view.php
+    const relevanceDropdown = document.getElementById("relevance-select"); 
+    const commentField = document.getElementById("closure_comment");
+
+    if (relevanceDropdown && commentField) {
+        relevanceDropdown.addEventListener("change", function() {
+            // Check if the selected option matches Core Banking
+            if (this.value === "Core Banking Operation Issue") {
+                // Set your predefined template text
+                commentField.value = 
+                    "Case identified as Core Banking Operation Issue and routed to BK Support Team";
+            }
+            else if (this.value === "Irrelevant") {
+                // Set your predefined template text
+                commentField.value = 
+                    "Case falls outside whistleblower Scope";
+            } 
+            else if(this.value === "Empty"){
+              // Set your predefined template text
+              commentField.value=
+                    "Case closed due to missing or insufficient details"
+            }
+            else if(this.value === "Relevant"){
+              // Set your predefined template text
+              commentField.value=
+                    "Case verified as a valid whistleblower issue. Documented and escalated to RAS Team for formal review."
+            }
+            else {
+              commentField.value="Case verified as a valid whistleblower issue. Documented and escalated to RAS Team for formal review.";
+            }
+           
+        });
+    }
+});
+</script>
+<!-- Progress & Success Modal Overlay -->
+<div id="uploadProgressModal" style="display: none; position: fixed; z-index: 9999; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); align-items: center; justify-content: center;">
+    <div style="background: #ffffff; padding: 30px; border-radius: 10px; width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+        <div id="progressSpinnerArea">
+            <h3 id="progressTitle" style="margin-top: 0; color: #333; font-size: 1.2rem;">Processing Case Closure</h3>
+            <p id="progressStatusText" style="color: #666; font-size: 0.9rem; margin-bottom: 20px;">Generating PDF report and dispatching email via Office 365</p>
+            
+            <!-- Progress Bar Container -->
+            <div style="background: #e9ecef; border-radius: 20px; height: 12px; width: 100%; overflow: hidden; margin-bottom: 15px;">
+                <div id="progressBarFill" style="background: #E81A3B; height: 100%; width: 0%; transition: width 0.4s ease-in-out;"></div>
+            </div>
+        </div>
+
+        <!-- Success Checkmark Area (Hidden initially) -->
+        <div id="successCheckmarkArea" style="display: none;">
+            <div style="width: 60px; height: 60px; background: #d4edda; color: #155724; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; margin: 0 auto 15px auto;">✓</div>
+            <h3 style="color: #155724; margin: 0 0 10px 0;">Case Closed Successfully!</h3>
+            <p style="color: #666; font-size: 0.9rem; margin: 0;">Reloading Case</p>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const form = document.querySelector("#caseUpdateForm"); // Replace with your actual form ID or selector
+    if (!form) return;
+
+    form.addEventListener("submit", function(e) {
+        e.preventDefault(); // Stop standard form submission
+
+        // Show modal
+        const modal = document.getElementById("uploadProgressModal");
+        const progressBar = document.getElementById("progressBarFill");
+        const statusText = document.getElementById("progressStatusText");
+        modal.style.display = "flex";
+
+        // Simulate smooth progress steps while waiting for server response
+        progressBar.style.width = "25%";
+        statusText.innerText = "Building Case report PDF";
+
+        setTimeout(() => { progressBar.style.width = "50%"; statusText.innerText = "Compiling uploaded evidence attachments"; }, 600);
+        setTimeout(() => { progressBar.style.width = "75%"; statusText.innerText = "Connecting to Office 365"; }, 1500);
+
+        // Submit data via Fetch API
+        const formData = new FormData(form);
+        formData.append("is_ajax", "1"); // Flag for backend to return JSON
+
+        fetch(form.action || "update_case_status.php", {
+            method: "POST",
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Complete progress bar to 100%
+                progressBar.style.width = "100%";
+                progressBar.style.background = "#28a745";
+                
+                setTimeout(() => {
+                    // Hide spinner, show green checkmark
+                    document.getElementById("progressSpinnerArea").style.display = "none";
+                    document.getElementById("successCheckmarkArea").style.display = "block";
+                    
+                    // Reload page after brief pause
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1200);
+                }, 500);
+            } else {
+                modal.style.display = "none";
+                alert("Error: " + (data.error || "Failed to update case."));
+            }
+        })
+        .catch(error => {
+            modal.style.display = "none";
+            console.error("Error:", error);
+            alert("An unexpected network or server error occurred.");
+        });
+    });
 });
 </script>
 
