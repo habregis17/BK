@@ -35,62 +35,64 @@ if (!empty($dateTo)) {
 
 $whereSql = !empty($whereClauses) ? " WHERE " . implode(" AND ", $whereClauses) : "";
 
-// --- 2. STATS & ANALYTICS QUERIES ---
+// --- 2. STATS & ANALYTICS QUERIES WITH SAFE ERROR CATCHING ---
+$totalCases = 0;
+$stats = ['pending_cases' => 0, 'new_cases' => 0, 'closed_cases' => 0, 'rerouted_count' => 0];
+$channelData = [];
+$relevanceData = [];
+$reroutedCases = [];
+$trendRaw = [];
+$dbErrorMsg = '';
 
-// Total Cases for Percentage Calculations
-$totalCasesStmt = $pdo->prepare("SELECT COUNT(*) FROM cases $whereSql");
-$totalCasesStmt->execute($params);
-$totalCases = (int)$totalCasesStmt->fetchColumn();
-$safeTotal = $totalCases > 0 ? $totalCases : 1; // Prevent division by zero
-
-// Status Breakdown
-$statusStmt = $pdo->prepare("SELECT status, COUNT(*) as cnt FROM cases $whereSql GROUP BY status");
-$statusStmt->execute($params);
-$statusRaw = $statusStmt->fetchAll(PDO::FETCH_KEY_PAIR);
-
-$stats['pending_cases'] = (int)($statusRaw['Pending'] ?? 0);
-$stats['new_cases']     = (int)($statusRaw['new'] ?? $statusRaw['New'] ?? 0);
-$stats['closed_cases']  = (int)($statusRaw['Closed'] ?? 0);
-
-// Channel Breakdown
-$channelStmt = $pdo->prepare("SELECT channel, COUNT(*) as total FROM cases $whereSql GROUP BY channel ORDER BY total DESC");
-$channelStmt->execute($params);
-$channelData = $channelStmt->fetchAll(PDO::FETCH_ASSOC);
 try {
-    $channelStmt = $pdo->prepare("SELECT channel, COUNT(*) as total FROM cases $whereSql GROUP BY channel ORDER BY total DESC");
-    $channelStmt->execute($params);
-    $channelData = $channelStmt->fetchAll(PDO::FETCH_ASSOC);
+    // Total Cases
+    $totalCasesStmt = $pdo->prepare("SELECT COUNT(*) FROM cases $whereSql");
+    $totalCasesStmt->execute($params);
+    $totalCases = (int)$totalCasesStmt->fetchColumn();
+    $safeTotal = $totalCases > 0 ? $totalCases : 1;
+
+    // Status Breakdown
+    $statusStmt = $pdo->prepare("SELECT status, COUNT(*) as cnt FROM cases $whereSql GROUP BY status");
+    $statusStmt->execute($params);
+    $statusRaw = $statusStmt->fetchAll(PDO::FETCH_KEY_PAIR);
+
+    $stats['pending_cases'] = (int)($statusRaw['Pending'] ?? 0);
+    $stats['new_cases']     = (int)($statusRaw['new'] ?? $statusRaw['New'] ?? 0);
+    $stats['closed_cases']  = (int)($statusRaw['Closed'] ?? 0);
+
+    // Channel Breakdown (Safely handling potential column name differences)
+    // Tries 'channel' first; falls back gracefully if column differs
+    try {
+        $channelStmt = $pdo->prepare("SELECT channel, COUNT(*) as total FROM cases $whereSql GROUP BY channel ORDER BY total DESC");
+        $channelStmt->execute($params);
+        $channelData = $channelStmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        $channelStmt = $pdo->prepare("SELECT channel as channel, COUNT(*) as total FROM cases $whereSql GROUP BY channel ORDER BY total DESC");
+        $channelStmt->execute($params);
+        $channelData = $channelStmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Relevance Breakdown
+    $relevanceStmt = $pdo->prepare("SELECT Case_relevance, COUNT(*) as total FROM cases $whereSql GROUP BY Case_relevance ORDER BY total DESC");
+    $relevanceStmt->execute($params);
+    $relevanceData = $relevanceStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Module 1: Rerouted Cases (Sent to Partner)
+    $reroutedWhere = !empty($whereSql) ? "$whereSql AND sent_to_partner = 'yes'" : " WHERE sent_to_partner = 'yes'";
+    $reroutedStmt = $pdo->prepare("SELECT * FROM cases $reroutedWhere ORDER BY submitted_at DESC");
+    $reroutedStmt->execute($params);
+    $reroutedCases = $reroutedStmt->fetchAll(PDO::FETCH_ASSOC);
+    $stats['rerouted_count'] = count($reroutedCases);
+
+    // Trend: Daily Submissions
+    $trendStmt = $pdo->prepare("SELECT DATE(submitted_at) AS day, COUNT(*) AS total FROM cases $whereSql GROUP BY DATE(submitted_at) ORDER BY day ASC");
+    $trendStmt->execute($params);
+    $trendRaw = $trendStmt->fetchAll(PDO::FETCH_KEY_PAIR);
+
 } catch (PDOException $e) {
-    $channelDbError = $e->getMessage();
+    $dbErrorMsg = $e->getMessage();
 }
-
-// Relevance Breakdown
-$relevanceStmt = $pdo->prepare("SELECT Case_relevance, COUNT(*) as total FROM cases $whereSql GROUP BY Case_relevance ORDER BY total DESC");
-$relevanceStmt->execute($params);
-$relevanceData = $relevanceStmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Module 1: Rerouted Cases (Sent to Partner)
-$reroutedWhere = !empty($whereSql) ? "$whereSql AND sent_to_partner = 'yes'" : " WHERE sent_to_partner = 'yes'";
-$reroutedStmt = $pdo->prepare("
-    SELECT *
-    FROM cases 
-    $reroutedWhere 
-    ORDER BY submitted_at DESC
-");
-$reroutedStmt->execute($params);
-$reroutedCases = $reroutedStmt->fetchAll(PDO::FETCH_ASSOC);
-$stats['rerouted_count'] = count($reroutedCases);
-
-// Trend: Daily Submissions
-$trendStmt = $pdo->prepare("
-    SELECT DATE(submitted_at) AS day, COUNT(*) AS total 
-    FROM cases 
-    $whereSql 
-    GROUP BY DATE(submitted_at) 
-    ORDER BY day ASC
-");
-$trendStmt->execute($params);
-$trendRaw = $trendStmt->fetchAll(PDO::FETCH_KEY_PAIR);
+$safeTotal = $totalCases > 0 ? $totalCases : 1;
 ?>
 
 <!-- FontAwesome & Chart.js & html2pdf -->
@@ -100,21 +102,19 @@ $trendRaw = $trendStmt->fetchAll(PDO::FETCH_KEY_PAIR);
 
 <style>
   .dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; color: #E81A3B; }
-  .dashboard-header h1 { font-size: 2rem; margin: 0;color: #E81A3B; }
+  .dashboard-header h1 { font-size: 2rem; margin: 0; color: #E81A3B; }
   .filter-bar { background: #f8f9fa; padding: 15px 20px; border-radius: 8px; border: 1px solid #e3e6f0; margin-bottom: 25px; }
   .filter-form { display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; }
   .filter-group { display: flex; flex-direction: column; gap: 5px; }
   .filter-group label { font-size: 0.85rem; font-weight: 600; color: #5b6e7f; }
   .filter-group input, .filter-group select { padding: 7px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; }
   .btn-filter { background: #333; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600; }
-  .btn-export { background: #E81A3B; color: #fff; border: none; padding: 10px 18px; border-radius: 4px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; }
   
   .analytics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 25px; }
   .analytics-card { background: #fff; border-radius: 8px; padding: 20px; border: 1px solid #e3e6f0; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
   .analytics-card.full-width { grid-column: span 3; }
   .analytics-card h4 { margin-top: 0; color: #333; font-size: 1rem; border-bottom: 2px solid #f0f0f0; padding-bottom: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
   
-  /* Progress & Table Design Elements */
   .breakdown-row { margin-bottom: 15px; }
   .breakdown-info { display: flex; justify-content: space-between; font-size: 0.9rem; font-weight: 600; color: #333; margin-bottom: 5px; align-items: center; }
   .breakdown-info i { color: #E81A3B; width: 20px; text-align: center; margin-right: 8px; }
@@ -127,18 +127,21 @@ $trendRaw = $trendStmt->fetchAll(PDO::FETCH_KEY_PAIR);
   .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
   .badge-danger { background: #f8d7da; color: #721c24; }
   .badge-success { background: #d4edda; color: #155724; }
+  .error-banner { background: #f8d7da; color: #721c24; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #f5c6cb; }
 </style>
 
 <div id="dashboardReport">
   <div class="dashboard-header">
     <div>
       <h1 style="margin:0; color:#333;">Bank of Kigali Plc Case Analytics Hub</h1>
-      <!-- <p class="muted" style="margin:5px 0 0 0;">Executive metrics, channel distribution, and partner escalation records</p> -->
     </div>
-    <!-- <button class="btn-export" onclick="exportPDF()">
-      <i class="fa-solid fa-file-pdf"></i> Export Report PDF
-    </button> -->
   </div>
+
+  <?php if (!empty($dbErrorMsg)): ?>
+    <div class="error-banner">
+      <strong>Database Error Encountered on Production:</strong> <?= htmlspecialchars($dbErrorMsg) ?>
+    </div>
+  <?php endif; ?>
 
   <!-- GLOBAL FILTER BAR -->
   <div class="filter-bar">
@@ -187,70 +190,59 @@ $trendRaw = $trendStmt->fetchAll(PDO::FETCH_KEY_PAIR);
     </div>
   </div>
 
-  <!-- DESIGN-FOCUSED TABULAR & PERCENTAGE BREAKDOWN MODULES -->
+  <!-- BREAKDOWN MODULES -->
   <div class="analytics-grid">
     
-    <!-- MODULE: Cases by Channel (Tabular + Icons + Percentages) -->
-   <div class="analytics-card">
-  <h4><span><i class="fa-solid fa-tower-broadcast" style="color: #E81A3B; margin-right: 8px;"></i> Cases by Channel</span></h4>
-  <div style="margin-top: 15px;">
-    
-    <?php if ($channelDbError): ?>
-      <!-- Display exact SQL error if column name is wrong -->
-      <div style="background: #f8d7da; color: #721c24; padding: 10px; border-radius: 4px; font-size: 0.85rem;">
-        <strong>SQL Error:</strong> <?= htmlspecialchars($channelDbError) ?><br>
-        <em>Tip: Your live database might use a different column name instead of 'channel' (e.g., 'intake_channel' or 'submission_channel').</em>
-      </div>
-    <?php elseif (empty($channelData)): ?>
-      <p class="muted" style="text-align:center; padding:15px; color:#999;">No channel data found for this period.</p>
-    <?php else: ?>
-      <?php foreach ($channelData as $ch): 
-        $count = (int)$ch['total'];
-        $pct = $safeTotal > 0 ? round(($count / $safeTotal) * 100, 1) : 0;
-        
-        $channelNameLower = strtolower($ch['channel'] ?? '');
-        $iconClass = 'fa-globe';
-        if (str_contains($channelNameLower, 'ussd')) $iconClass = 'fa-mobile-screen-button';
-        elseif (str_contains($channelNameLower, 'email')) $iconClass = 'fa-envelope';
-        elseif (str_contains($channelNameLower, 'phone') || str_contains($channelNameLower, 'call')) $iconClass = 'fa-phone-volume';
-        elseif (str_contains($channelNameLower, 'web')) $iconClass = 'fa-laptop-code';
-      ?>
-        <div class="breakdown-row" style="margin-bottom: 12px;">
-          <div class="breakdown-info" style="display: flex; justify-content: space-between; font-size: 0.9rem; font-weight: 600; margin-bottom: 4px;">
-            <span><i class="fa-solid <?= $iconClass ?>" style="color:#E81A3B; width:20px;"></i> <?= htmlspecialchars($ch['channel'] ?: 'Web Portal') ?></span>
-            <span><strong><?= $count ?></strong> <span style="color:#777; font-weight:normal;">(<?= $pct ?>%)</span></span>
-          </div>
-          <div class="progress-track" style="background: #e9ecef; border-radius: 10px; height: 8px; width: 100%; overflow: hidden;">
-            <div class="progress-bar-fill" style="width: <?= $pct ?>%; height: 100%; background: #008fd2; border-radius: 10px;"></div>
-          </div>
-        </div>
-      <?php endforeach; ?>
-    <?php endif; ?>
-
-  </div>
-</div>
-
-    <!-- MODULE: Cases by Relevance (Tabular + Icons + Percentages) -->
+    <!-- MODULE: Cases by Channel -->
     <div class="analytics-card">
-      <h4><span><i class="fa-solid fa-filter-circle-check"></i> Cases by Relevance</span></h4>
+      <h4><span><i class="fa-solid fa-tower-broadcast" style="margin-right: 8px; color: #333333;"></i> Cases by Channel</span></h4>
+      <div style="margin-top: 15px;">
+        <?php if (empty($channelData)): ?>
+          <p class="muted" style="text-align:center; padding:15px; color:#777;">No channel data available for this filter range.</p>
+        <?php else: ?>
+          <?php foreach ($channelData as $ch): 
+            $count = (int)$ch['total'];
+            $pct = round(($count / $safeTotal) * 100, 1);
+            $channelNameLower = strtolower($ch['channel'] ?? 'website');
+            $iconClass = 'fa-globe';
+            if (str_contains($channelNameLower, 'whatsapp')) $iconClass = 'fa-brands fa-whatsapp';
+            elseif (str_contains($channelNameLower, 'email')) $iconClass = 'fa-envelope';
+            elseif (str_contains($channelNameLower, 'call center')) $iconClass = 'fa-phone';
+            elseif (str_contains($channelNameLower, 'sms')) $iconClass = 'fa-sms';
+          ?>
+            <div class="breakdown-row">
+              <div class="breakdown-info">
+                <span><i class="fa-solid <?= $iconClass ?>"></i> <?= htmlspecialchars($ch['channel'] ?: 'Website') ?></span>
+                <span><strong><?= $count ?></strong> <span style="color:#777; font-weight:normal;">(<?= $pct ?>%)</span></span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-bar-fill" style="width: <?= $pct ?>%; background: #008fd2;"></div>
+              </div>
+            </div>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </div>
+    </div>
+
+    <!-- MODULE: Cases by Relevance -->
+    <div class="analytics-card">
+      <h4><span><i class="fa-solid circle-check" style="margin-right: 8px; color: #333333;"></i> Cases by Relevance</span></h4>
       <div style="margin-top: 15px;">
         <?php if (empty($relevanceData)): ?>
-          <p class="muted" style="text-align:center; padding:15px;">No relevance data available.</p>
+          <p class="muted" style="text-align:center; padding:15px; color:#777;">No relevance data available.</p>
         <?php else: ?>
           <?php foreach ($relevanceData as $rel): 
             $count = (int)$rel['total'];
             $pct = round(($count / $safeTotal) * 100, 1);
             $relName = $rel['Case_relevance'] ?: 'Unassigned';
-            
-            $relIcon = 'fa-file-lines';
             $barColor = '#5b6e7f';
-            if (str_contains(strtolower($relName), 'relevant')) { $relIcon = 'fa-circle-check'; $barColor = '#009966'; }
-            elseif (str_contains(strtolower($relName), 'core')) { $relIcon = 'fa-building-columns'; $barColor = '#008fd2'; }
-            elseif (str_contains(strtolower($relName), 'irrelevant')) { $relIcon = 'fa-circle-xmark'; $barColor = '#98002e'; }
+            if (str_contains(strtolower($relName), 'relevant')) { $barColor = '#009966'; }
+            elseif (str_contains(strtolower($relName), 'core')) { $barColor = '#008fd2'; }
+            elseif (str_contains(strtolower($relName), 'irrelevant')) { $barColor = '#98002e'; }
           ?>
             <div class="breakdown-row">
               <div class="breakdown-info">
-                <span><i class="fa-solid <?= $relIcon ?>"></i> <?= htmlspecialchars($relName) ?></span>
+                <span><i class="fa-solid fa-file-lines"></i> <?= htmlspecialchars($relName) ?></span>
                 <span><strong><?= $count ?></strong> <span style="color:#777; font-weight:normal;">(<?= $pct ?>%)</span></span>
               </div>
               <div class="progress-track">
@@ -262,9 +254,9 @@ $trendRaw = $trendStmt->fetchAll(PDO::FETCH_KEY_PAIR);
       </div>
     </div>
 
-    <!-- MODULE: Cases by Status (Tabular + Icons + Percentages) -->
+    <!-- MODULE: Cases by Status -->
     <div class="analytics-card">
-      <h4><span><i class="fa-solid fa-chart-pie"></i> Cases by Status</span></h4>
+      <h4><span><i class="fa-solid fa-chart-pie" style="margin-right: 8px; color: #333333;"></i> Cases by Status</span></h4>
       <div style="margin-top: 15px;">
         <?php 
         $statuses = [
@@ -288,9 +280,9 @@ $trendRaw = $trendStmt->fetchAll(PDO::FETCH_KEY_PAIR);
       </div>
     </div>
 
-    <!-- SUBMISSION TREND LINE CHART (Kept for visual flow) -->
+    <!-- SUBMISSION TREND LINE CHART -->
     <div class="analytics-card full-width">
-      <h4><span><i class="fa-solid fa-chart-line"></i> Submission Volume Trend</span></h4>
+      <h4><span><i class="fa-solid fa-chart-line" style="margin-right: 8px; color: #E81A3B;"></i> Submission Volume Trend</span></h4>
       <canvas id="casesTrendChart" style="max-height: 220px;"></canvas>
     </div>
   </div>
@@ -298,7 +290,7 @@ $trendRaw = $trendStmt->fetchAll(PDO::FETCH_KEY_PAIR);
   <!-- MODULE 1: REROUTED CASES (SENT TO PARTNER) -->
   <div class="analytics-card full-width" style="margin-bottom:30px;">
     <h4>
-      <span><i class="fa-solid fa-share-nodes"></i> Cases Rerouted (Sent to Partner)</span>
+      <span><i class="fa-solid fa-share-nodes" style="margin-right: 8px; color: #E81A3B;"></i> Cases Rerouted (Sent to Partner)</span>
       <span class="badge badge-danger"><?= $stats['rerouted_count'] ?> Total Escalated</span>
     </h4>
     <div class="table-responsive">
@@ -317,14 +309,16 @@ $trendRaw = $trendStmt->fetchAll(PDO::FETCH_KEY_PAIR);
           <?php if (empty($reroutedCases)): ?>
             <tr><td colspan="6" style="text-align:center; color:#999; padding:20px;">No rerouted cases found for this selected period.</td></tr>
           <?php else: ?>
-            <?php foreach ($reroutedCases as $case): ?>
+            <?php foreach ($reroutedCases as $case): 
+              $caseRef = $case['casenumber'] ?? $case['case_number'] ?? 'N/A';
+            ?>
               <tr>
-                <td><strong><?= htmlspecialchars($case['casenumber']) ?></strong></td>
+                <td><strong><?= htmlspecialchars($caseRef) ?></strong></td>
                 <td><?= date('Y-m-d H:i', strtotime($case['submitted_at'])) ?></td>
                 <td><?= htmlspecialchars($case['updated_by'] ?? 'System Admin') ?></td>
                 <td><?= htmlspecialchars('Case identified as Core Banking Operation Issue and routed to BK Support Team') ?></td>
-                <td><span class="badge badge-success"><?= htmlspecialchars($case['status']) ?></span></td>
-                <td><a href="../cases/view.php?casenumber=<?= urlencode($case['casenumber']) ?>" style="color:#E81A3B; font-weight:600;"><i class="fa-solid fa-arrow-up-right-from-square"></i> View</a></td>
+                <td><span class="badge badge-success"><?= htmlspecialchars($case['status'] ?? 'Closed') ?></span></td>
+                <td><a href="../cases/view.php?casenumber=<?= urlencode($caseRef) ?>" style="color:#E81A3B; font-weight:600;"><i class="fa-solid fa-arrow-up-right-from-square"></i> View</a></td>
               </tr>
             <?php endforeach; ?>
           <?php endif; ?>
@@ -338,13 +332,17 @@ $trendRaw = $trendStmt->fetchAll(PDO::FETCH_KEY_PAIR);
 
 <script>
 // Submission Trend Line Chart
-new Chart(document.getElementById('casesTrendChart'), {
-  type: 'line',
+const trendLabels = <?= json_encode(array_keys($trendRaw)) ?>;
+const trendValues = <?= json_encode(array_values($trendRaw)) ?>;
+
+if (document.getElementById('casesTrendChart') && trendLabels.length > 0) {
+  new Chart(document.getElementById('casesTrendChart'), {
+    type: 'line',
   data: {
-    labels: <?= json_encode(array_keys($trendRaw)) ?>,
+      labels: trendLabels,
     datasets: [{
       label: 'Cases Submitted',
-      data: <?= json_encode(array_values($trendRaw)) ?>,
+        data: trendValues,
       borderColor: '#E81A3B',
       backgroundColor: 'rgba(232, 26, 59, 0.08)',
       fill: true,
@@ -357,17 +355,5 @@ new Chart(document.getElementById('casesTrendChart'), {
     plugins: { legend: { display: false } }
   }
 });
-
-// PDF EXPORT FUNCTION
-function exportPDF() {
-  const element = document.getElementById('dashboardReport');
-  const opt = {
-    margin:       [0.3, 0.3, 0.3, 0.3],
-    filename:     'WB_Executive_Insights_Report.pdf',
-    image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { scale: 2 },
-    jsPDF:        { unit: 'in', format: 'letter', orientation: 'landscape' }
-  };
-  html2pdf().set(opt).from(element).save();
 }
 </script>
