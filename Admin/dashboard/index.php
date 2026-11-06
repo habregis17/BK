@@ -56,6 +56,13 @@ $stats['closed_cases']  = (int)($statusRaw['Closed'] ?? 0);
 $channelStmt = $pdo->prepare("SELECT channel, COUNT(*) as total FROM cases $whereSql GROUP BY channel ORDER BY total DESC");
 $channelStmt->execute($params);
 $channelData = $channelStmt->fetchAll(PDO::FETCH_ASSOC);
+try {
+    $channelStmt = $pdo->prepare("SELECT channel, COUNT(*) as total FROM cases $whereSql GROUP BY channel ORDER BY total DESC");
+    $channelStmt->execute($params);
+    $channelData = $channelStmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    $channelDbError = $e->getMessage();
+}
 
 // Relevance Breakdown
 $relevanceStmt = $pdo->prepare("SELECT Case_relevance, COUNT(*) as total FROM cases $whereSql GROUP BY Case_relevance ORDER BY total DESC");
