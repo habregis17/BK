@@ -256,41 +256,32 @@ body {
 
 /* Inputs */
 /* Normalize form controls */
-.filter-group input {
-  box-sizing: border-box;
-  height: 38px;
-  padding: 6px 10px;
-  font-size: 0.85rem;
-  line-height: 1.2;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background-color: #fff;
-  color: #333333;
-  vertical-align: middle;
+/* Force exact equal box-sizing and height */
+.filter-group input, 
+.filter-group select { 
+  height: 38px !important; 
+  box-sizing: border-box !important; 
+  padding: 6px 12px !important; 
+  border: 1px solid #ccc !important; 
+  border-radius: 4px !important; s
+  font-size: 0.9rem !important; 
+  background-color: #fff !important;
+  color: #333333 !important;
+  line-height: normal !important;
+  vertical-align: middle !important;
+  margin: 0 !important;
 }
 
+/* Strip native select styling so it renders identically to inputs */
 .filter-group select {
-  box-sizing: border-box;
-  height: 38px;
-  padding: 6px 10px;
-  font-size: 0.85rem;
-  line-height: normal;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background-color: #fff;
-  color: #333333;
-  /* Reset default browser styling */
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  /* Optional: add custom dropdown arrow */
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23333'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  background-size: 10px;
-  /* Make room for arrow */
-  padding-right: 30px;
-  vertical-align: middle;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  padding-right: 32px !important; /* Extra padding so text doesn't collide with the arrow */
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23333'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 12px center !important;
+  background-size: 10px !important;
 }
 
 /* Actions block */

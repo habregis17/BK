@@ -32,6 +32,11 @@ if (!empty($dateTo)) {
     $whereClauses[] = "DATE(submitted_at) <= :date_to";
     $params[':date_to'] = $dateTo;
 }
+if (!empty($quarter)) {
+    $whereClauses[] = "DATE(submitted_at) BETWEEN :quarter_start AND :quarter_end";
+    $params[':quarter_start'] = $dateFrom;
+    $params[':quarter_end'] = $dateTo;
+}
 
 $whereSql = !empty($whereClauses) ? " WHERE " . implode(" AND ", $whereClauses) : "";
 
@@ -84,10 +89,20 @@ try {
     $reroutedCases = $reroutedStmt->fetchAll(PDO::FETCH_ASSOC);
     $stats['rerouted_count'] = count($reroutedCases);
 
+    // Top 10 most recent rerouted cases
+    $reroutedStmt = $pdo->prepare("SELECT * FROM cases $reroutedWhere ORDER BY last_updated DESC LIMIT 10");
+    $reroutedStmt->execute($params);
+    $topReroutedCases = $reroutedStmt->fetchAll(PDO::FETCH_ASSOC);
+
     // Trend: Daily Submissions
     $trendStmt = $pdo->prepare("SELECT DATE(submitted_at) AS day, COUNT(*) AS total FROM cases $whereSql GROUP BY DATE(submitted_at) ORDER BY day ASC");
     $trendStmt->execute($params);
     $trendRaw = $trendStmt->fetchAll(PDO::FETCH_KEY_PAIR);
+
+    //Last 6 Months Trend (Optional)
+    $last6MonthsStmt = $pdo->prepare("SELECT DATE_FORMAT(submitted_at, '%Y-%m') AS month, COUNT(*) AS total FROM cases WHERE submitted_at >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH) GROUP BY month ORDER BY month ASC");
+    $last6MonthsStmt->execute($params);
+    $last6MonthsData = $last6MonthsStmt->fetchAll(PDO::FETCH_KEY_PAIR);
 
 } catch (PDOException $e) {
     $dbErrorMsg = $e->getMessage();
@@ -103,13 +118,7 @@ $safeTotal = $totalCases > 0 ? $totalCases : 1;
 <style>
   .dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; color: #E81A3B; }
   .dashboard-header h1 { font-size: 2rem; margin: 0; color: #E81A3B; }
-  .filter-bar { background: #f8f9fa; padding: 15px 20px; border-radius: 8px; border: 1px solid #e3e6f0; margin-bottom: 25px; }
-  .filter-form { display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; }
-  .filter-group { display: flex; flex-direction: column; gap: 5px; }
-  .filter-group label { font-size: 0.85rem; font-weight: 600; color: #5b6e7f; }
-  .filter-group input, .filter-group select { padding: 7px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; }
-  .btn-filter { background: #333; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600; }
-  
+
   .analytics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 25px; }
   .analytics-card { background: #fff; border-radius: 8px; padding: 20px; border: 1px solid #e3e6f0; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
   .analytics-card.full-width { grid-column: span 3; }
@@ -128,12 +137,45 @@ $safeTotal = $totalCases > 0 ? $totalCases : 1;
   .badge-danger { background: #f8d7da; color: #721c24; }
   .badge-success { background: #d4edda; color: #155724; }
   .error-banner { background: #f8d7da; color: #721c24; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #f5c6cb; }
+  .filter-bar { background: #f8f9fa; padding: 15px 20px; border-radius: 8px; border: 1px solid #e3e6f0; margin-bottom: 25px; }
+  .filter-form { display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; }
+  .filter-group { display: flex; flex-direction: column; gap: 5px; }
+  .filter-group label { font-size: 0.85rem; font-weight: 600; color: #5b6e7f; }
+ /* Force exact equal box-sizing and height */
+.filter-group input, 
+.filter-group select { 
+  height: 38px !important; 
+  box-sizing: border-box !important; 
+  padding: 6px 12px !important; 
+  border: 1px solid #ccc !important; 
+  border-radius: 4px !important; 
+  font-size: 0.9rem !important; 
+  background-color: #fff !important;
+  color: #333333 !important;
+  line-height: normal !important;
+  vertical-align: middle !important;
+  margin: 0 !important;
+}
+
+/* Strip native select styling so it renders identically to inputs */
+.filter-group select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  padding-right: 32px !important; /* Extra padding so text doesn't collide with the arrow */
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23333'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 12px center !important;
+  background-size: 10px !important;
+}
+
+
 </style>
 
 <div id="dashboardReport">
   <div class="dashboard-header">
     <div>
-      <h1 style="margin:0; color:#333;">Bank of Kigali Plc Case Analytics Hub</h1>
+      <h1 style="margin:0; color:#333;">Bank of Kigali Plc Case Analytics</h1>
     </div>
   </div>
 
@@ -155,7 +197,7 @@ $safeTotal = $totalCases > 0 ? $totalCases : 1;
         <input type="date" name="date_to" value="<?= htmlspecialchars($dateTo) ?>">
       </div>
       <div class="filter-group">
-        <label>Quarter Preset</label>
+        <label>Quarter</label>
         <select name="quarter" onchange="this.form.submit()">
           <option value="">-- Select Period --</option>
           <option value="Q1" <?= $quarter === 'Q1' ? 'selected' : '' ?>>Q1 (Jan - Mar)</option>
@@ -165,8 +207,11 @@ $safeTotal = $totalCases > 0 ? $totalCases : 1;
           <option value="YTD" <?= $quarter === 'YTD' ? 'selected' : '' ?>>Year to Date</option>
         </select>
       </div>
-      <button type="submit" class="btn-filter">Apply Filter</button>
-      <a href="dashboard.php" style="padding: 8px 12px; color: #666; text-decoration: none; font-size: 0.9rem;">Reset</a>
+      <div class="filter-actions filter-group" style="display: flex; flex-direction: row; align-items: center; height: 38px; gap: 10px;">
+        <button type="submit" style="width: auto;">Apply</button>
+        <button type="button" onclick="window.location.href='../Dashboard/'" class="clear-btn" style="width: auto;">Clear</button>
+      </div>
+     
     </form>
   </div>
 
@@ -200,24 +245,34 @@ $safeTotal = $totalCases > 0 ? $totalCases : 1;
         <?php if (empty($channelData)): ?>
           <p class="muted" style="text-align:center; padding:15px; color:#777;">No channel data available for this filter range.</p>
         <?php else: ?>
-          <?php foreach ($channelData as $ch): 
-            $count = (int)$ch['total'];
-            $pct = round(($count / $safeTotal) * 100, 1);
-            $channelNameLower = strtolower($ch['channel'] ?? 'website');
-            $iconClass = 'fa-globe';
-            if (strpos($channelNameLower, 'whatsapp')) $iconClass = 'fa-brands fa-whatsapp';
-            elseif (strpos($channelNameLower, 'email')) $iconClass = 'fa-envelope';
-            elseif (strpos($channelNameLower, 'call center')) $iconClass = 'fa-phone';
-            elseif (strpos($channelNameLower, 'sms')) $iconClass = 'fa-sms';
-            elseif (strpos($channelNameLower, 'website')) $iconClass = 'fa-globe';
+          <?php 
+            $maxChannelCount = max(array_column($channelData, 'total'));
+            foreach ($channelData as $ch): 
+              $count = (int)$ch['total'];
+              $pct = round(($count / $safeTotal) * 100, 1);
+              $isTop = ($count === $maxChannelCount && $maxChannelCount > 0);
+
+              $channelNameLower = strtolower($ch['channel'] ?? 'website');
+              $iconClass = 'fa-globe';
+              if (strpos($channelNameLower, 'whatsapp') !== false) {
+                  $iconClass = 'fa-brands fa-whatsapp';
+              } elseif (strpos($channelNameLower, 'email') !== false || strpos($channelNameLower, 'mail') !== false) {
+                  $iconClass = 'fa-solid fa-envelope';
+              } elseif (strpos($channelNameLower, 'call center') !== false || strpos($channelNameLower, 'phone') !== false || strpos($channelNameLower, 'support') !== false) {
+                  $iconClass = 'fa-solid fa-headset';
+              } elseif (strpos($channelNameLower, 'sms') !== false || strpos($channelNameLower, 'text') !== false) {
+                  $iconClass = 'fa-solid fa-comment-sms';
+              } elseif (strpos($channelNameLower, 'website') !== false || strpos($channelNameLower, 'portal') !== false) {
+                  $iconClass = 'fa-solid fa-globe';
+              }
           ?>
-            <div class="breakdown-row">
-              <div class="breakdown-info">
-                <span><i class="fa-solid <?= $iconClass ?>"></i> <?= htmlspecialchars($ch['channel'] ?: 'Website') ?></span>
-                <span><strong><?= $count ?></strong> <span style="color:#777; font-weight:normal;">(<?= $pct ?>%)</span></span>
+            <div class="breakdown-row" style="<?= $isTop ? 'margin-bottom: 20px;' : 'margin-bottom: 14px;' ?>">
+              <div class="breakdown-info" style="<?= $isTop ? 'font-weight: 700; font-size: 0.95rem; color: #111;' : 'font-weight: 500; font-size: 0.88rem; color: #555;' ?>">
+                <span><i class="<?= $iconClass ?>" style="width: 20px; text-align: center; margin-right: 8px; <?= $isTop ? 'color: #E81A3B; font-size: 1.1rem;' : '' ?>"></i> <?= htmlspecialchars($ch['channel'] ?: 'website') ?></span>
+                <span><strong><?= $count ?></strong> <span style="font-weight:normal; <?= $isTop ? 'color: #333;' : 'color: #777;' ?>">(<?= $pct ?>%)</span></span>
               </div>
-              <div class="progress-track">
-                <div class="progress-bar-fill" style="width: <?= $pct ?>%; background: #008fd2;"></div>
+              <div class="progress-track" style="height: <?= $isTop ? '14px' : '8px' ?>; border-radius: <?= $isTop ? '7px' : '4px' ?>;">
+                <div class="progress-bar-fill" style="width: <?= $pct ?>%; background: #E81A3B;"></div>
               </div>
             </div>
           <?php endforeach; ?>
@@ -227,27 +282,44 @@ $safeTotal = $totalCases > 0 ? $totalCases : 1;
 
     <!-- MODULE: Cases by Relevance -->
     <div class="analytics-card">
-      <h4><span><i class="fa-solid circle-check" style="margin-right: 8px; color: #333333;"></i> Cases by Relevance</span></h4>
+      <h4><span><i class="fa-solid fa-eye" style="margin-right: 8px; color: #333333;"></i> Cases by Relevance</span></h4>
       <div style="margin-top: 15px;">
         <?php if (empty($relevanceData)): ?>
           <p class="muted" style="text-align:center; padding:15px; color:#777;">No relevance data available.</p>
         <?php else: ?>
-          <?php foreach ($relevanceData as $rel): 
-            $count = (int)$rel['total'];
-            $pct = round(($count / $safeTotal) * 100, 1);
-            $relName = $rel['Case_relevance'] ?: 'Unassigned';
-            $barColor = '#5b6e7f';
-            if (strpos(strtolower($relName), 'relevant')) { $barColor = '#009966'; }
-            elseif (strpos(strtolower($relName), 'core')) { $barColor = '#008fd2'; }
-            elseif (strpos(strtolower($relName), 'irrelevant')) { $barColor = '#98002e'; }
+          <?php 
+            $unifiedColor = '#5b6e7f';
+            $maxRelCount = max(array_column($relevanceData, 'total'));
+            foreach ($relevanceData as $rel): 
+              $count = (int)$rel['total'];
+              $pct = round(($count / $safeTotal) * 100, 1);
+              $isTop = ($count === $maxRelCount && $maxRelCount > 0);
+
+              $relName = trim($rel['Case_relevance'] ?? '');
+              $displayName = !empty($relName) ? $relName : 'Unassigned / Empty';
+
+              $iconClass = 'fa-solid fa-circle-question';
+              $relLower = strtolower($relName);
+
+              if (empty($relName) || $relLower === 'empty' || $relLower === 'null' || $relLower === 'unassigned') {
+                  $iconClass = 'fa-solid fa-circle-question';
+              } elseif (strpos($relLower, 'core') !== false) {
+                  $iconClass = 'fa-solid fa-building-columns';
+              } elseif (strpos($relLower, 'irrelevant') !== false) {
+                  $iconClass = 'fa-solid fa-circle-xmark';
+              } elseif (strpos($relLower, 'relevant') !== false) {
+                  $iconClass = 'fa-solid fa-circle-check';
+              } else {
+                  $iconClass = 'fa-solid fa-file-lines';
+              }
           ?>
-            <div class="breakdown-row">
-              <div class="breakdown-info">
-                <span><i class="fa-solid fa-file-lines"></i> <?= htmlspecialchars($relName) ?></span>
-                <span><strong><?= $count ?></strong> <span style="color:#777; font-weight:normal;">(<?= $pct ?>%)</span></span>
+            <div class="breakdown-row" style="<?= $isTop ? 'margin-bottom: 20px;' : 'margin-bottom: 14px;' ?>">
+              <div class="breakdown-info" style="<?= $isTop ? 'font-weight: 700; font-size: 0.95rem; color: #111;' : 'font-weight: 500; font-size: 0.88rem; color: #555;' ?>">
+                <span><i class="<?= $iconClass ?>" style="color: <?= $unifiedColor ?>; width: 20px; text-align: center; margin-right: 8px; <?= $isTop ? 'font-size: 1.1rem;' : '' ?>"></i> <?= htmlspecialchars($displayName) ?></span>
+                <span><strong><?= $count ?></strong> <span style="font-weight:normal; <?= $isTop ? 'color: #333;' : 'color: #777;' ?>">(<?= $pct ?>%)</span></span>
               </div>
-              <div class="progress-track">
-                <div class="progress-bar-fill" style="width: <?= $pct ?>%; background: <?= $barColor ?>;"></div>
+              <div class="progress-track" style="height: <?= $isTop ? '14px' : '8px' ?>; border-radius: <?= $isTop ? '7px' : '4px' ?>;">
+                <div class="progress-bar-fill" style="width: <?= $pct ?>%; background: <?= $unifiedColor ?>;"></div>
               </div>
             </div>
           <?php endforeach; ?>
@@ -265,25 +337,33 @@ $safeTotal = $totalCases > 0 ? $totalCases : 1;
             ['name' => 'New', 'count' => $stats['new_cases'], 'icon' => 'fa-bell', 'color' => '#008fd2'],
             ['name' => 'Closed', 'count' => $stats['closed_cases'], 'icon' => 'fa-square-check', 'color' => '#009966']
         ];
+
+        // Sort the statuses array by count in descending order (highest count first)
+        usort($statuses, function($a, $b) {
+            return $b['count'] - $a['count'];
+        });
+
+        $maxStatusCode = max(array_column($statuses, 'count'));
+
         foreach ($statuses as $st):
             $pct = round(($st['count'] / $safeTotal) * 100, 1);
+            $isTop = ($st['count'] === $maxStatusCode && $maxStatusCode > 0);
         ?>
-          <div class="breakdown-row">
-            <div class="breakdown-info">
-              <span><i class="fa-solid <?= $st['icon'] ?>" style="color: <?= $st['color'] ?>;"></i> <?= $st['name'] ?></span>
-              <span><strong><?= $st['count'] ?></strong> <span style="color:#777; font-weight:normal;">(<?= $pct ?>%)</span></span>
+          <div class="breakdown-row" style="<?= $isTop ? 'margin-bottom: 20px;' : 'margin-bottom: 14px;' ?>">
+            <div class="breakdown-info" style="<?= $isTop ? 'font-weight: 700; font-size: 0.95rem; color: #111;' : 'font-weight: 500; font-size: 0.88rem; color: #555;' ?>">
+              <span><i class="fa-solid <?= $st['icon'] ?>" style="color: <?= $st['color'] ?>; width: 20px; text-align: center; margin-right: 8px; <?= $isTop ? 'font-size: 1.1rem;' : '' ?>"></i> <?= $st['name'] ?></span>
+              <span><strong><?= $st['count'] ?></strong> <span style="font-weight:normal; <?= $isTop ? 'color: #333;' : 'color: #777;' ?>">(<?= $pct ?>%)</span></span>
             </div>
-            <div class="progress-track">
+            <div class="progress-track" style="height: <?= $isTop ? '14px' : '8px' ?>; border-radius: <?= $isTop ? '7px' : '4px' ?>;">
               <div class="progress-bar-fill" style="width: <?= $pct ?>%; background: <?= $st['color'] ?>;"></div>
             </div>
           </div>
         <?php endforeach; ?>
       </div>
     </div>
-
     <!-- SUBMISSION TREND LINE CHART -->
     <div class="analytics-card full-width">
-      <h4><span><i class="fa-solid fa-chart-line" style="margin-right: 8px; color: #E81A3B;"></i> Submission Volume Trend</span></h4>
+      <h4><span><i class="fa-solid fa-chart-line" style="margin-right: 8px; color: #E81A3B;"></i> Last 6 Months Submission Volume Trend</span></h4>
       <canvas id="casesTrendChart" style="max-height: 220px;"></canvas>
     </div>
   </div>
@@ -291,17 +371,17 @@ $safeTotal = $totalCases > 0 ? $totalCases : 1;
   <!-- MODULE 1: REROUTED CASES (SENT TO PARTNER) -->
   <div class="analytics-card full-width" style="margin-bottom:30px;">
     <h4>
-      <span><i class="fa-solid fa-share-nodes" style="margin-right: 8px; color: #E81A3B;"></i> Cases Rerouted (Sent to Partner)</span>
-      <span class="badge badge-danger"><?= $stats['rerouted_count'] ?> Total Escalated</span>
+      <span><i class="fa-solid fa-share-nodes" style="margin-right: 8px; color: #E81A3B;"></i> Most Recent Cases Rerouted (Sent to BK Support team)</span>
+      <span class="badge badge-danger"><?= $stats['rerouted_count'] ?> Total Escalated Cases</span>
     </h4>
     <div class="table-responsive">
       <table class="data-table">
         <thead>
           <tr>
             <th>Case Ref #</th>
-            <th>Submission Date</th>
-            <th>Updated By</th>
-            <th>Relevance Resolution Note</th>
+            <th>Routed Date</th>
+            <!-- <th>Updated By</th> -->
+            <!-- <th>Relevance Resolution Note</th> -->
             <th>Status</th>
             <th>Action</th>
           </tr>
@@ -310,14 +390,14 @@ $safeTotal = $totalCases > 0 ? $totalCases : 1;
           <?php if (empty($reroutedCases)): ?>
             <tr><td colspan="6" style="text-align:center; color:#999; padding:20px;">No rerouted cases found for this selected period.</td></tr>
           <?php else: ?>
-            <?php foreach ($reroutedCases as $case): 
+            <?php foreach ($topReroutedCases as $case): 
               $caseRef = $case['casenumber'] ?? $case['case_number'] ?? 'N/A';
             ?>
               <tr>
                 <td><strong><?= htmlspecialchars($caseRef) ?></strong></td>
-                <td><?= date('Y-m-d H:i', strtotime($case['submitted_at'])) ?></td>
-                <td><?= htmlspecialchars($case['updated_by'] ?? 'System Admin') ?></td>
-                <td><?= htmlspecialchars('Case identified as Core Banking Operation Issue and routed to BK Support Team') ?></td>
+                <td><?= date('Y-m-d H:i', strtotime($case['last_updated'])) ?></td>
+                <!-- <td><?= htmlspecialchars($case['updated_by'] ?? 'System Admin') ?></td> -->
+                <!-- <td><?= htmlspecialchars('Case identified as Core Banking Operation Issue and routed to BK Support Team') ?></td> -->
                 <td><span class="badge badge-success"><?= htmlspecialchars($case['status'] ?? 'Closed') ?></span></td>
                 <td><a href="../cases/view.php?casenumber=<?= urlencode($caseRef) ?>" style="color:#E81A3B; font-weight:600;"><i class="fa-solid fa-arrow-up-right-from-square"></i> View</a></td>
               </tr>
@@ -333,8 +413,8 @@ $safeTotal = $totalCases > 0 ? $totalCases : 1;
 
 <script>
 // Submission Trend Line Chart
-const trendLabels = <?= json_encode(array_keys($trendRaw)) ?>;
-const trendValues = <?= json_encode(array_values($trendRaw)) ?>;
+const trendLabels = <?= json_encode(array_keys($last6MonthsData)) ?>;
+const trendValues = <?= json_encode(array_values($last6MonthsData)) ?>;
 
 if (document.getElementById('casesTrendChart') && trendLabels.length > 0) {
   new Chart(document.getElementById('casesTrendChart'), {
