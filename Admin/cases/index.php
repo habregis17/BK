@@ -43,6 +43,7 @@ $sensitivity = $_GET['sensitivity'] ?? '';
 $identity_choice = $_GET['identity_choice'] ?? '';
 $dateFrom    = $_GET['date_from'] ?? '';
 $dateTo      = $_GET['date_to'] ?? '';
+$relevance = $_GET['Case_relevance'] ?? '';
 
 /* --------------------------
    WHERE CONDITIONS
@@ -149,7 +150,6 @@ $cases = $dataStmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <h1>Cases</h1>
-<p class="muted">Cases at a Glance</p>
 <form method="GET" class="filter-bar">
   <div class="filter-group">
     <label for="search">Search</label>
@@ -200,9 +200,9 @@ $cases = $dataStmt->fetchAll(PDO::FETCH_ASSOC);
     </select>
   </div>
 
-  <div class="filter-actions filter-group">
-    <button type="submit">Apply</button>
-    <a href="index.php" class="clear-btn">Clear</a>
+  <div class="filter-actions filter-group" style="display: flex; flex-direction: row; gap: 10px; align-items: center;">
+    <button type="submit" style="width: auto;">Apply</button>
+    <button type="button" onclick="window.location.href='index.php'" class="clear-btn" style="width: auto;">Clear</button>
   </div>
 
 </form>
@@ -318,11 +318,12 @@ $cases = $dataStmt->fetchAll(PDO::FETCH_ASSOC);
         <input type="hidden" name="<?= htmlspecialchars($k) ?>" value="<?= htmlspecialchars($v) ?>">
     <?php endif; endforeach; ?>
 
-    <select name="perPage" onchange="this.form.submit()">
-      <?php foreach ([10,20,50,100] as $n): ?>
-        <option value="<?= $n ?>" <?= $perPage==$n?'selected':'' ?>><?= $n ?></option>
-      <?php endforeach; ?>
-    </select>
+<select name="perPage" onchange="this.form.submit()" style="padding: 10px 35px 10px 14px; font-size: 0.95rem; border: 1px solid #333333; border-radius: 8px; background-color: #fff; color: #333333; font-family: 'Proxima Nova', sans-serif; cursor: pointer; outline: none; box-sizing: border-box;">
+  <?php foreach ([10,20,50,100] as $n): ?>
+    <option value="<?= $n ?>" <?= $perPage==$n?'selected':'' ?>><?= $n.' items' ?></option>
+  <?php endforeach; ?>
+</select>
+
   </form>
 </div>
 

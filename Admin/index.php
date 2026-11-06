@@ -6,7 +6,7 @@ session_start();
  * send them to the dashboard
  */
 if (isset($_SESSION['admin_id'])) {
-    header('Location: /BK/Admin/dashboard/index.php');
+    header('Location: /BK/Admin/dashboard/');
     exit;
 }
 

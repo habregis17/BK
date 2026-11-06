@@ -100,10 +100,12 @@ function getChannelIcon($channel) {
 
 $languages = $case['language'] ?? '';   
 function getLanguageIcon($languages)
- {   
-  return match($languages){              
-    default      => 'fa-language'};
+ {
+  switch ($languages) {
+    default:
+      return 'fa-language';
   }
+}
 
 ?>
 
@@ -266,8 +268,6 @@ function getLanguageIcon($languages)
 <div class="detail-card">
   <h3>Attachments</h3>
    <?php
-$files = json_decode($case['files'], true); // Decode JSON string to PHP array
-
 if (is_array($files) && count($files) > 0): ?>
   <label><strong>Attached File(s)</strong></label>
   <div class="file-list">

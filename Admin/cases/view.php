@@ -1,8 +1,7 @@
 <?php
-// Trigger error first
-
+// Force error reporting display for debugging
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+m: ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 
 // Force fatal error display
@@ -37,6 +36,32 @@ $case = $stmt->fetch();
 if (!$case) {
   die("Case not found.");
 }
+/* Fetch Previous and Next case numbers based on chronological submission order */
+$prevCase = null;
+$nextCase = null;
+
+if (isset($case['id'])) {
+    // Previous = Case submitted BEFORE (lower ID)
+    $prevStmt = $pdo->prepare("SELECT casenumber FROM cases WHERE id < ? ORDER BY id DESC LIMIT 1");
+    $prevStmt->execute([$case['id']]);
+    $prevCase = $prevStmt->fetch(PDO::FETCH_ASSOC);
+
+    // Next = Case submitted AFTER (higher ID)
+    $nextStmt = $pdo->prepare("SELECT casenumber FROM cases WHERE id > ? ORDER BY id ASC LIMIT 1");
+    $nextStmt->execute([$case['id']]);
+    $nextCase = $nextStmt->fetch(PDO::FETCH_ASSOC);
+} else {
+    // Fallback if 'id' column is missing, using submitted_at timestamp
+    // Previous = Submitted BEFORE (earlier timestamp)
+    $prevStmt = $pdo->prepare("SELECT casenumber FROM cases WHERE submitted_at < ? ORDER BY submitted_at DESC LIMIT 1");
+    $prevStmt->execute([$case['submitted_at']]);
+    $prevCase = $prevStmt->fetch(PDO::FETCH_ASSOC);
+
+    // Next = Submitted AFTER (later timestamp)
+    $nextStmt = $pdo->prepare("SELECT casenumber FROM cases WHERE submitted_at > ? ORDER BY submitted_at ASC LIMIT 1");
+    $nextStmt->execute([$case['submitted_at']]);
+    $nextCase = $nextStmt->fetch(PDO::FETCH_ASSOC);
+}
 
 $rawFiles = $case['files'] ?? '';
 $files = [];
@@ -46,7 +71,7 @@ if ($rawFiles) {
     if (is_array($decoded)) {
         $files = $decoded;
     } else {
-        $files = array_filter(explode(',', $rawFiles)); // fallback if not JSON
+        $files = array_filter(explode(',', $rawFiles));
     }
 }
 
@@ -76,7 +101,6 @@ $auditStmt->execute([$case['casenumber']]);
 $audits = $auditStmt->fetchAll(PDO::FETCH_ASSOC);
 
 /* Fetch reporter information */
-
 $identity = strtolower(trim($case['identity_choice']));
 $showPII = in_array($identity, [
   'identifiable',
@@ -99,8 +123,7 @@ function getChannelIcon($channel) {
 }
 
 $languages = $case['language'] ?? '';   
-function getLanguageIcon($languages)
- {
+function getLanguageIcon($languages) {
   switch ($languages) {
     default:
       return 'fa-language';
@@ -127,12 +150,51 @@ function getLanguageIcon($languages)
   <?php unset($_SESSION['error']); ?>
 <?php endif; ?>
 
-<div class="case-summary">
-  <!-- Add a breadcrumb to return to all cases -->
-   <div class="breadcrumb">
-    <a href="index.php"><i class="fas fa-arrow-left"></i> Back </a>
+<!-- Redesigned Navigation Bar (Back Button & Previous/Next Switcher) -->
+<div class="case-nav-bar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+  <a href="index.php" class="nav-btn back-btn" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; background: #333333; color: #FFFFFF; border: 2px solid #e0e0e0; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.95rem; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: all 0.2s ease;">
+    <i class="fas fa-arrow-left" style="color: #FFFFFF;"></i> Back to Cases
+  </a>
+
+  <div class="case-switcher" style="display: flex; align-items: center; gap: 8px;">
+    <?php if ($prevCase): ?>
+      <a href="view.php?casenumber=<?= urlencode($prevCase['casenumber']) ?>" class="nav-btn" style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; background: #fff; color: #333333; border: 2px solid #e0e0e0; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: all 0.2s ease;" title="Previous Case">
+        <i class="fas fa-chevron-left"></i> Previous
+      </a>
+    <?php else: ?>
+      <span class="nav-btn disabled" style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; background: #f9f9f9; color: #bbb; border: 2px solid #eee; border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: not-allowed;">
+        <i class="fas fa-chevron-left"></i> Previous
+      </span>
+    <?php endif; ?>
+
+    <span style="font-size: 0.85rem; color: #777; font-weight: 600; padding: 0 6px; text-transform: uppercase; letter-spacing: 0.5px;">
+      Quick Nav
+    </span>
+
+    <?php if ($nextCase): ?>
+      <a href="view.php?casenumber=<?= urlencode($nextCase['casenumber']) ?>" class="nav-btn" style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; background: #fff; color: #333333; border: 2px solid #e0e0e0; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: all 0.2s ease;" title="Next Case">
+        Next <i class="fas fa-chevron-right"></i>
+      </a>
+    <?php else: ?>
+      <span class="nav-btn disabled" style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; background: #f9f9f9; color: #bbb; border: 2px solid #eee; border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: not-allowed;">
+        Next <i class="fas fa-chevron-right"></i>
+      </span>
+    <?php endif; ?>
   </div>
-    
+</div>
+
+<style>
+  .case-nav-bar a.nav-btn:hover {
+    background-color: #ED1A3B !important;
+    color: #fff !important;
+    border-color: #ED1A3B !important;
+  }
+  .case-nav-bar a.nav-btn:hover i {
+    color: #fff !important;
+  }
+</style>
+
+<div class="case-summary">
   <div class="summary-left">
 
     <h2>
@@ -228,11 +290,6 @@ function getLanguageIcon($languages)
 
   </div>
 
-  <!-- <div class="overview-card">
-    <label>Case Manager</label>
-    <span><?= htmlspecialchars($case['Case_manager']) ?></span>
-  </div> -->
-
   <div class="overview-card">
     <label>Submitted</label>
     <span><?= htmlspecialchars($case['submitted_at']) ?></span>
@@ -276,7 +333,6 @@ if (is_array($files) && count($files) > 0): ?>
       $filename = basename($file);
       $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
 
-      // Choose icon based on file type
       switch ($ext) {
         case 'pdf': $icon = '📄'; break;
         case 'doc':
@@ -306,14 +362,6 @@ if (is_array($files) && count($files) > 0): ?>
 
 <div class="detail-card">
   <h3>Activity Timeline</h3>
-
-  <!-- <?php foreach ($comments as $c): ?>
-    <div class="timeline-item <?= $c['comment_type'] ?>">
-      <strong><?= htmlspecialchars($c['created_by']) ?></strong>
-      <span class="time"><?= htmlspecialchars($c['created_at']) ?></span>
-      <p><?= nl2br(htmlspecialchars($c['comment'])) ?></p>
-    </div>
-  <?php endforeach; ?> -->
 
   <?php foreach ($audits as $a): ?>
     <div class="timeline-item audit">
@@ -377,8 +425,6 @@ if (is_array($files) && count($files) > 0): ?>
 
 </div>
 
-
-
 <script>
 function toggleClosureComment() {
   const status = document.getElementById('status-select').value;
@@ -428,7 +474,6 @@ function showLoading(type) {
   
   modal.style.display = 'flex';
   
-  // Animate progress
   let width = 0;
   const interval = setInterval(function() {
     if (width >= 90) {
@@ -440,13 +485,11 @@ function showLoading(type) {
     }
   }, 200);
   
-  // Determine the URL based on type
   const casenumber = '<?= urlencode($case["casenumber"]) ?>';
   const url = type === 'PDF' 
     ? 'export_pdf.php?casenumber=' + casenumber 
     : 'export_excel.php?casenumber=' + casenumber;
   
-  // Fetch the file and open it
   fetch(url, {
   headers: { 'X-Requested-With': 'XMLHttpRequest' }
 })
@@ -478,6 +521,25 @@ function showLoading(type) {
   console.error(err);
 });
 }
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const adminForm = document.querySelector('.admin-panel form');
+  if (adminForm) {
+    adminForm.addEventListener('submit', function (e) {
+      const relevanceSelect = document.getElementById('relevance-select');
+      const statusSelect = document.getElementById('status-select');
+      
+      if (relevanceSelect && relevanceSelect.value === 'Core Banking Operation Issue' && statusSelect && statusSelect.value === 'Closed') {
+        const warningMessage = "WARNING: You have selected 'Core Banking Operation Issue'.\n\nProceeding will update this case and automatically dispatch an email notification to BK Support Team. Do you want to proceed?";
+        
+        if (!confirm(warningMessage)) {
+          e.preventDefault(); // Cancel form submission if reviewer clicks 'Cancel'
+        }
+      }
+    });
+  }
+});
 </script>
 
 <?php require '../includes/footer.php'; ?>
