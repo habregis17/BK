@@ -185,7 +185,7 @@ $trendRaw = $trendStmt->fetchAll(PDO::FETCH_KEY_PAIR);
     
     <!-- MODULE: Cases by Channel (Tabular + Icons + Percentages) -->
     <div class="analytics-card">
-      <h4><span><i class="fa-solid fa-tower-broadcast"></i> Cases by Channel</span></h4>
+      <h4><span><i class="fa-solid fa-tower-broadcast" style="margin-right: 8px; color: #E81A3B;"></i> Cases by Channel</span></h4>
       <div style="margin-top: 15px;">
         <?php if (empty($channelData)): ?>
           <p class="muted" style="text-align:center; padding:15px;">No channel data available.</p>
